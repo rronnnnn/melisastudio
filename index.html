@@ -79,7 +79,6 @@
     filter:drop-shadow(0 4px 14px rgba(122,92,69,.18));}
   .tagline{font-family:'Cormorant Garamond',serif;font-size:clamp(17px,2.6vw,23px);
     letter-spacing:.42em;text-transform:uppercase;color:var(--cocoa);margin-top:6px;font-weight:500;}
-  .hours{margin-top:14px;font-size:14px;letter-spacing:.14em;color:var(--cocoa);opacity:.85;}
 
   .services{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:8px;}
   .card{padding:34px 24px 30px;text-align:center;cursor:pointer;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;}
@@ -195,7 +194,7 @@
   .legend-dot{width:12px;height:12px;border-radius:4px;background:var(--pending-bg);border:1.5px solid var(--pending-border);}
 
   footer{text-align:center;margin-top:54px;color:var(--cocoa);font-size:13px;letter-spacing:.06em;}
-  footer .fb{font-family:'Parisienne',cursive;font-size:26px;color:var(--cocoa-deep);}
+  footer .fb{color:var(--cocoa-deep);font-weight:700;}
 
   /* ========== ADMIN PANEL ========== */
   #adminPanel{display:none;position:relative;z-index:2;max-width:780px;margin:0 auto;padding:54px 22px 80px;}
@@ -277,7 +276,6 @@
     <header>
       <img class="brand-logo" src="MstudioLogo.png" alt="Studio Melisa">
       <div class="tagline">Nails &middot; Brows &middot; Lip Blush</div>
-      <div class="hours">Open every day &nbsp;8:00&ndash;20:00</div>
     </header>
 
     <section class="services">
@@ -330,6 +328,18 @@
 
     <!-- Bookings view (hidden until logged in) -->
     <div id="adminBookings" style="display:none;">
+      <!-- Block Days -->
+      <div class="admin-section-title">Block Days</div>
+      <div class="glass" style="padding:20px 22px;margin-bottom:24px;">
+        <div class="cal-head">
+          <button id="blkPrevM" aria-label="Previous month">&#8249;</button>
+          <div class="cal-month" id="blkMonth"></div>
+          <button id="blkNextM" aria-label="Next month">&#8250;</button>
+        </div>
+        <div class="cal-grid" id="blkGrid"></div>
+        <div style="font-size:12.5px;color:var(--cocoa);margin-top:10px;">Tap a day to block or unblock it. Blocked days can't be booked.</div>
+      </div>
+
       <div class="admin-filter">
         <button class="filter-btn active" data-filter="pending">⏳ Waiting for approval</button>
         <button class="filter-btn" data-filter="approved">✓ Approved</button>
@@ -442,6 +452,10 @@ const ADMIN_PASSWORD = "melisab2026"; // change this to whatever Melisa wants
 /* Supabase — fill in your project URL and anon key */
 const SUPABASE_URL  = "https://dnhtvflvjxcdzkqpuhwh.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRuaHR2Zmx2anhjZHprcXB1aHdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMTc0ODUsImV4cCI6MjA5NzY5MzQ4NX0.gZ84R_IU08yHXt6I0531WjBx1eK-zQTZCu1ri_OZGUs"; // paste from Supabase dashboard → Settings → API
+
+/* Resend — email notifications on approve/reject */
+const RESEND_API_KEY = "re_KQwfAdEe_2M8pe5kNqmtXhHfNso6obWK6";
+const STUDIO_EMAIL = "onboarding@resend.dev"; // replace with verified domain in production
 /* ============================================================ */
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -545,11 +559,27 @@ $('prevM').addEventListener('click',()=>{ shiftMonth(-1); });
 $('nextM').addEventListener('click',()=>{ shiftMonth(1); });
 function shiftMonth(d){ state.calDate.setMonth(state.calDate.getMonth()+d); renderCalendar(); }
 
-function renderCalendar(){
+/* blocked days shared by customer calendar (Set of 'YYYY-MM-DD' strings) */
+let blockedDates = new Set();
+async function fetchBlockedDays(){
+  try {
+    const { data, error } = await sb.from('blocked_days').select('date');
+    if(error) throw error;
+    blockedDates = new Set((data||[]).map(r=>r.date));
+  } catch(e){
+    console.error('Could not load blocked days:', e);
+  }
+}
+
+async function renderCalendar(){
   const cd=state.calDate, y=cd.getFullYear(), m=cd.getMonth();
   $('calMonth').textContent = MONTHS[m]+' '+y;
   const today=new Date(); today.setHours(0,0,0,0);
   $('prevM').disabled = (y===today.getFullYear() && m===today.getMonth());
+
+  // fetch blocked days for the month being displayed before rendering
+  await fetchBlockedDays();
+
   const grid=$('calGrid'); grid.innerHTML='';
   WD.forEach(w=>{ const e=document.createElement('div'); e.className='wd'; e.textContent=w; grid.appendChild(e); });
   let first=new Date(y,m,1).getDay(); first=(first+6)%7;
@@ -559,6 +589,12 @@ function renderCalendar(){
     const btn=document.createElement('button'); btn.className='day'; btn.textContent=d;
     const date=new Date(y,m,d);
     if(date<today){ btn.disabled=true; }
+    if(blockedDates.has(dateStr(date))){
+      btn.disabled=true;
+      btn.style.cssText='background:#FDECEA; color:#C0392B; opacity:1;';
+      grid.appendChild(btn);
+      continue;
+    }
     if(state.date && sameDay(date,state.date)) btn.classList.add('sel');
     btn.addEventListener('click',()=>{
       state.date=date; state.time=null; dayBookings=[]; $('err2').textContent='';
@@ -741,10 +777,15 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeBooking(); })
    ADMIN PANEL
    ============================================================ */
 let adminFilter = 'pending';
+let adminBlocked = new Set();          // 'YYYY-MM-DD' strings
+let blkCalDate = new Date();           // month shown in the block-days calendar
+blkCalDate.setDate(1);
 
 function initAdmin(){
   $('adminLoginBtn').addEventListener('click', handleAdminLogin);
   $('adminPass').addEventListener('keydown', e=>{ if(e.key==='Enter') handleAdminLogin(); });
+  $('blkPrevM').addEventListener('click',()=>shiftBlkMonth(-1));
+  $('blkNextM').addEventListener('click',()=>shiftBlkMonth(1));
   $('adminLogout').addEventListener('click',()=>{
     $('adminBookings').style.display='none';
     $('adminLogin').style.display='block';
@@ -766,6 +807,7 @@ function handleAdminLogin(){
     $('adminErr').textContent='';
     $('adminLogin').style.display='none';
     $('adminBookings').style.display='block';
+    renderBlockCalendar();
     loadAdminBookings();
   } else {
     $('adminErr').textContent='Incorrect password. Try again.';
@@ -835,6 +877,19 @@ async function updateBooking(id, newStatus){
   try {
     const { error } = await sb.from('bookings').update({ status: newStatus }).eq('id', id);
     if(error) throw error;
+
+    // Fetch booking details and notify the customer by email (non-blocking)
+    try {
+      const { data: booking, error: fErr } = await sb
+        .from('bookings').select('*').eq('id', id).single();
+      if(fErr) throw fErr;
+      if(booking && booking.email && (newStatus==='approved' || newStatus==='rejected')){
+        await sendBookingEmail(booking, newStatus);
+      }
+    } catch(emailErr){
+      console.error('Email notification failed:', emailErr);
+    }
+
     await loadAdminBookings();
   } catch(e){
     console.error(e);
@@ -843,7 +898,112 @@ async function updateBooking(id, newStatus){
   }
 }
 
+async function sendBookingEmail(booking, newStatus){
+  const svcLabel = SERVICES[booking.service]?.title || booking.service;
+  let subject, html;
+  if(newStatus==='approved'){
+    subject = "Your booking is confirmed ✓ — Studio Melisa";
+    html =
+`<div style="font-family:Arial,sans-serif;color:#5A4636;line-height:1.6;">
+  <p>Hi ${escHtml(booking.name)},</p>
+  <p>Wonderful news — your booking at <strong>Studio Melisa</strong> is confirmed! 🌸 We can't wait to see you.</p>
+  <p>
+    <strong>Service:</strong> ${escHtml(svcLabel)}<br>
+    <strong>Date:</strong> ${escHtml(booking.date)}<br>
+    <strong>Time:</strong> ${escHtml(booking.time)}
+  </p>
+  <p>If anything changes, just reply to let us know. See you soon! 💕</p>
+  <p>— Studio Melisa</p>
+</div>`;
+  } else {
+    subject = "About your booking — Studio Melisa";
+    html =
+`<div style="font-family:Arial,sans-serif;color:#5A4636;line-height:1.6;">
+  <p>Hi ${escHtml(booking.name)},</p>
+  <p>Thank you so much for your booking request at <strong>Studio Melisa</strong>. Unfortunately, the slot you chose
+     (${escHtml(booking.date)} at ${escHtml(booking.time)}) isn't available after all.</p>
+  <p>We'd love to still see you — please pick another time that suits you and we'll be happy to welcome you. 🌸</p>
+  <p>With warm wishes,<br>— Studio Melisa</p>
+</div>`;
+  }
+
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${RESEND_API_KEY}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      from: STUDIO_EMAIL,
+      to: booking.email,
+      subject,
+      html
+    })
+  });
+  if(!res.ok){
+    const txt = await res.text().catch(()=> '');
+    throw new Error('Resend responded '+res.status+': '+txt);
+  }
+}
+
 function escHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ============================================================
+   ADMIN — BLOCK DAYS
+   ============================================================ */
+function shiftBlkMonth(d){ blkCalDate.setMonth(blkCalDate.getMonth()+d); renderBlockCalendar(); }
+
+async function fetchBlockedDaysAdmin(){
+  try {
+    const { data, error } = await sb.from('blocked_days').select('date');
+    if(error) throw error;
+    adminBlocked = new Set((data||[]).map(r=>r.date));
+  } catch(e){
+    console.error('Could not load blocked days:', e);
+  }
+}
+
+async function renderBlockCalendar(){
+  const cd=blkCalDate, y=cd.getFullYear(), m=cd.getMonth();
+  $('blkMonth').textContent = MONTHS[m]+' '+y;
+  const today=new Date(); today.setHours(0,0,0,0);
+  $('blkPrevM').disabled = (y===today.getFullYear() && m===today.getMonth());
+
+  await fetchBlockedDaysAdmin();
+
+  const grid=$('blkGrid'); grid.innerHTML='';
+  WD.forEach(w=>{ const e=document.createElement('div'); e.className='wd'; e.textContent=w; grid.appendChild(e); });
+  let first=new Date(y,m,1).getDay(); first=(first+6)%7;
+  const days=new Date(y,m+1,0).getDate();
+  for(let i=0;i<first;i++){ const e=document.createElement('div'); e.className='day empty'; grid.appendChild(e); }
+  for(let d=1;d<=days;d++){
+    const btn=document.createElement('button'); btn.className='day'; btn.textContent=d;
+    const date=new Date(y,m,d);
+    const ds=dateStr(date);
+    const isBlocked=adminBlocked.has(ds);
+    if(isBlocked){
+      btn.style.cssText='background:#FDECEA; border:1.5px solid #E88080; color:#C0392B;';
+    }
+    btn.addEventListener('click',()=>toggleBlockedDay(ds, isBlocked));
+    grid.appendChild(btn);
+  }
+}
+
+async function toggleBlockedDay(ds, isBlocked){
+  try {
+    if(isBlocked){
+      const { error } = await sb.from('blocked_days').delete().eq('date', ds);
+      if(error) throw error;
+    } else {
+      const { error } = await sb.from('blocked_days').insert({ date: ds });
+      if(error) throw error;
+    }
+  } catch(e){
+    console.error('Could not toggle blocked day:', e);
+    alert('Could not update blocked day. Try again.');
+  }
+  await renderBlockCalendar();
+}
 </script>
 </body>
 </html>
