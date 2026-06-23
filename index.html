@@ -823,15 +823,23 @@ function buildOptions(){
 function fmtDate(d){ return d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }
 function renderSummary(){
   const s=SERVICES[state.service];
+  const isMulti=MULTISTEP_SERVICES.includes(state.service);
   const rows=[
     ['Service', s.title],
     ['Name', $('fName').value.trim()+' '+$('fSurname').value.trim()],
     ['Phone', $('fPhone').value.trim()],
     ['Email', $('fEmail').value.trim()],
     ['Date', fmtDate(state.date)],
-    ['Time', state.time],
-    [s.title==='Eyebrows'?'Services':'Styles', state.opts.join(', ')]
+    ['Time', state.time]
   ];
+  if(isMulti){
+    rows.push(['Nail type', state.nailType]);
+    if(state.serviceType) rows.push(['Service type', state.serviceType]);
+    rows.push(['Style', state.style]);
+    rows.push(['Duration', currentDuration()+' min']);
+  } else {
+    rows.push([s.title==='Eyebrows'?'Services':'Styles', state.opts.join(', ')]);
+  }
   $('summary').innerHTML = rows.map(r=>
     '<div class="sum-row"><span class="k">'+r[0]+'</span><span class="v">'+r[1]+'</span></div>').join('');
 }
@@ -843,6 +851,17 @@ $('confirmBtn').addEventListener('click', async ()=>{
   btn.textContent = 'Saving…';
 
   const s = SERVICES[state.service];
+  const isMulti = MULTISTEP_SERVICES.includes(state.service);
+  const duration = currentDuration();
+  let optionsText;
+  if(isMulti){
+    const parts=[state.nailType];
+    if(state.serviceType) parts.push(state.serviceType);
+    parts.push(state.style);
+    optionsText = parts.join(' · ');
+  } else {
+    optionsText = state.opts.join(', ');
+  }
   const bookingData = {
     service:   state.service,
     date:      dateStr(state.date),
@@ -850,8 +869,11 @@ $('confirmBtn').addEventListener('click', async ()=>{
     name:      $('fName').value.trim()+' '+$('fSurname').value.trim(),
     phone:     $('fPhone').value.trim(),
     email:     $('fEmail').value.trim(),
-    options:   state.opts.join(', '),
-    status:    'pending'
+    options:   optionsText,
+    status:    'pending',
+    nail_type: isMulti ? state.nailType : null,
+    service_type: isMulti ? state.serviceType : null,
+    duration_minutes: duration
   };
 
   try {
@@ -866,7 +888,7 @@ $('confirmBtn').addEventListener('click', async ()=>{
 `🌸 *New Booking — Studio Melisa* 🌸
 
 *Service:* ${s.title}
-*${s.title==='Eyebrows'?'Services':'Styles'}:* ${state.opts.join(', ')}
+*Details:* ${optionsText}
 ————————————
 *Name:* ${$('fName').value.trim()} ${$('fSurname').value.trim()}
 *Phone:* ${$('fPhone').value.trim()}
@@ -973,6 +995,7 @@ function renderAdminBookings(bookings){
           <span>📅 ${b.date}</span>
           <span>🕐 ${b.time}</span>
           <span>💅 ${escHtml(svcLabel)}</span>
+          ${b.duration_minutes?`<span>⏱ ${b.duration_minutes} min</span>`:''}
           <span>📱 ${escHtml(b.phone)}</span>
         </div>
         <div style="font-size:13px;color:var(--cocoa);margin-top:6px;">Options: ${escHtml(b.options||'—')}</div>
