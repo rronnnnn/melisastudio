@@ -654,7 +654,7 @@ async function loadAndRenderSlots(){
 
     const { data, error } = await sb
       .from('bookings')
-      .select('time, status, service')
+      .select('time, status, service, duration_minutes')
       .eq('date', dateStr(state.date))
       .in('service', servicesToCheck)
       .in('status', ['pending','approved']);
@@ -671,37 +671,27 @@ async function loadAndRenderSlots(){
 
 function renderSlots(bookings){
   const box=$('slots'); box.innerHTML='';
-  const step=SERVICES[state.service].interval;
+  const dur=currentDuration();
   const now=new Date();
   const isToday = state.date && sameDay(state.date, now);
+  const nowMin = now.getHours()*60+now.getMinutes();
+  let hasPending=false;
 
-  // Build lookup: time -> status
-  const booked = {};
-  bookings.forEach(b=>{ booked[b.time] = b.status; });
-
-  let hasPending = false;
-
-  for(let t=OPEN_MIN; t<=CLOSE_MIN-step; t+=step){
-    const hh=String(Math.floor(t/60)).padStart(2,'0'), mm=String(t%60).padStart(2,'0');
-    const label=hh+':'+mm;
+  for(let t=OPEN_MIN; t+dur<=CLOSE_MIN; t+=GRID){
+    const label=fmtMin(t);
     const btn=document.createElement('button');
-    btn.className='slot';
-    btn.textContent=label;
+    btn.className='slot'; btn.textContent=label;
 
-    const status = booked[label];
+    const status = slotStatus(t, dur, bookings);
 
-    if(isToday && t <= now.getHours()*60+now.getMinutes()){
+    if(isToday && t <= nowMin){
       btn.disabled=true;
-    } else if(status === 'approved'){
+    } else if(status==='approved'){
       // Fully taken — disabled, looks unavailable
-      btn.disabled=true;
-      btn.title='Already booked';
-    } else if(status === 'pending'){
+      btn.disabled=true; btn.title='Already booked';
+    } else if(status==='pending'){
       // Orange — reserved, pending approval
-      btn.classList.add('pending');
-      btn.disabled=true;
-      btn.title='Waiting for approval';
-      hasPending=true;
+      btn.classList.add('pending'); btn.disabled=true; btn.title='Waiting for approval'; hasPending=true;
     } else {
       // Available
       if(state.time===label) btn.classList.add('sel');
