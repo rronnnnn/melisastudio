@@ -473,8 +473,38 @@ const SERVICES = {
 const OPEN_MIN  = 8*60;
 const CLOSE_MIN = 20*60;
 
-let state = { service:null, step:1, date:null, time:null, opts:[], calDate:new Date() };
+let state = { service:null, stepKey:'contact', date:null, time:null, opts:[],
+  nailType:null, serviceType:null, style:null, duration:null, calDate:new Date() };
 let dayBookings = []; // cached bookings for the selected date
+
+/* ---- duration + conflict helpers ---- */
+const SERVICE_DURATION = { manicure:60, pedicure:60, eyebrows:15, lipblush:120 };
+const GRID = 15; // slot generation interval, minutes
+
+function toMin(hhmm){ const [h,m]=hhmm.split(':').map(Number); return h*60+m; }
+function fmtMin(t){ return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0'); }
+
+// new booking window [S, S+D) vs existing window [Bs, Bs+Bd)
+function overlaps(S, D, Bs, Bd){ return Bs < S + D && Bs + Bd > S; }
+
+// Worst conflicting status for a candidate slot. Returns 'approved', 'pending', or null (free).
+// `bookings` must already be filtered to the relevant worker's services.
+function slotStatus(S, D, bookings){
+  let pending=false;
+  for(const b of bookings){
+    const Bs=toMin(b.time);
+    const Bd=b.duration_minutes || SERVICE_DURATION[b.service] || 60;
+    if(overlaps(S, D, Bs, Bd)){
+      if(b.status==='approved') return 'approved';
+      if(b.status==='pending') pending=true;
+    }
+  }
+  return pending ? 'pending' : null;
+}
+
+function currentDuration(){
+  return state.duration || SERVICE_DURATION[state.service] || 60;
+}
 
 const overlay = document.getElementById('overlay');
 const $ = id => document.getElementById(id);
