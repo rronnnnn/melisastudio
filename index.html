@@ -357,15 +357,10 @@
         <button class="close" id="closeBtn" aria-label="Close">&times;</button>
       </div>
 
-      <div class="steps" id="steps">
-        <div class="dot active" data-d="1">1</div><div class="bar" data-b="1"></div>
-        <div class="dot" data-d="2">2</div><div class="bar" data-b="2"></div>
-        <div class="dot" data-d="3">3</div><div class="bar" data-b="3"></div>
-        <div class="dot" data-d="4">4</div>
-      </div>
+      <div class="steps" id="steps"></div>
 
-      <!-- STEP 1 -->
-      <div class="step show" data-step="1">
+      <!-- CONTACT -->
+      <div class="step show" data-stepkey="contact">
         <h4>Your details</h4>
         <div class="two">
           <div class="field"><label>Name</label><input id="fName" placeholder="Name" autocomplete="given-name"></div>
@@ -377,8 +372,41 @@
         <div class="nav"><button class="btn btn-primary" data-next>Continue</button></div>
       </div>
 
-      <!-- STEP 2 -->
-      <div class="step" data-step="2">
+      <!-- NAIL TYPE (manicure/pedicure) -->
+      <div class="step" data-stepkey="nailtype">
+        <h4>What type of nails do you have?</h4>
+        <div class="opts" id="nailOpts"></div>
+        <div class="err" id="errNail"></div>
+        <div class="nav">
+          <button class="btn btn-ghost" data-back>Back</button>
+          <button class="btn btn-primary" data-next>Continue</button>
+        </div>
+      </div>
+
+      <!-- SERVICE TYPE (skipped if Natural) -->
+      <div class="step" data-stepkey="servicetype">
+        <h4>What service do you need?</h4>
+        <div class="opts" id="serviceOpts"></div>
+        <div class="err" id="errService"></div>
+        <div class="nav">
+          <button class="btn btn-ghost" data-back>Back</button>
+          <button class="btn btn-primary" data-next>Continue</button>
+        </div>
+      </div>
+
+      <!-- STYLE (sets duration) -->
+      <div class="step" data-stepkey="style">
+        <h4>Choose your style</h4>
+        <div class="opts" id="styleOpts"></div>
+        <div class="err" id="errStyle"></div>
+        <div class="nav">
+          <button class="btn btn-ghost" data-back>Back</button>
+          <button class="btn btn-primary" data-next>Continue</button>
+        </div>
+      </div>
+
+      <!-- DATE -->
+      <div class="step" data-stepkey="date">
         <h4>Pick a date</h4>
         <div class="cal-head">
           <button id="prevM" aria-label="Previous month">&#8249;</button>
@@ -393,8 +421,8 @@
         </div>
       </div>
 
-      <!-- STEP 3 -->
-      <div class="step" data-step="3">
+      <!-- TIME -->
+      <div class="step" data-stepkey="time">
         <h4>Choose a time</h4>
         <div class="slot-legend" id="slotLegend" style="display:none;">
           <div class="legend-dot"></div>
@@ -408,8 +436,8 @@
         </div>
       </div>
 
-      <!-- STEP 4 -->
-      <div class="step" data-step="4">
+      <!-- OPTIONS (eyebrows / lip blush) -->
+      <div class="step" data-stepkey="options">
         <h4 id="optTitle">Select your styles</h4>
         <div class="opts" id="opts"></div>
         <div class="err" id="err4"></div>
@@ -419,8 +447,8 @@
         </div>
       </div>
 
-      <!-- STEP 5: confirm -->
-      <div class="step" data-step="5">
+      <!-- REVIEW -->
+      <div class="step" data-stepkey="review">
         <div class="done-ico">&#127800;</div>
         <h4 style="text-align:center">Review your booking</h4>
         <div class="summary" id="summary"></div>
@@ -473,8 +501,78 @@ const SERVICES = {
 const OPEN_MIN  = 8*60;
 const CLOSE_MIN = 20*60;
 
-let state = { service:null, step:1, date:null, time:null, opts:[], calDate:new Date() };
+let state = { service:null, stepKey:'contact', date:null, time:null, opts:[],
+  nailType:null, serviceType:null, style:null, duration:null, calDate:new Date() };
 let dayBookings = []; // cached bookings for the selected date
+
+/* ---- duration + conflict helpers ---- */
+const SERVICE_DURATION = { manicure:60, pedicure:60, eyebrows:15, lipblush:120 };
+const GRID = 15; // slot generation interval, minutes
+
+function toMin(hhmm){ const [h,m]=hhmm.split(':').map(Number); return h*60+m; }
+function fmtMin(t){ return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0'); }
+
+// new booking window [S, S+D) vs existing window [Bs, Bs+Bd)
+function overlaps(S, D, Bs, Bd){ return Bs < S + D && Bs + Bd > S; }
+
+// Worst conflicting status for a candidate slot. Returns 'approved', 'pending', or null (free).
+// `bookings` must already be filtered to the relevant worker's services.
+function slotStatus(S, D, bookings){
+  let pending=false;
+  for(const b of bookings){
+    const Bs=toMin(b.time);
+    const Bd=b.duration_minutes || SERVICE_DURATION[b.service] || 60;
+    if(overlaps(S, D, Bs, Bd)){
+      if(b.status==='approved') return 'approved';
+      if(b.status==='pending') pending=true;
+    }
+  }
+  return pending ? 'pending' : null;
+}
+
+function currentDuration(){
+  return state.duration || SERVICE_DURATION[state.service] || 60;
+}
+
+const MULTISTEP_SERVICES = ['manicure','pedicure'];
+
+function getSequence(){
+  if(MULTISTEP_SERVICES.includes(state.service)){
+    const seq=['contact','nailtype','servicetype','style','date','time','review'];
+    return state.nailType==='Natural' ? seq.filter(k=>k!=='servicetype') : seq;
+  }
+  return ['contact','date','time','options','review'];
+}
+
+function renderDots(seq, key){
+  const idx=seq.indexOf(key);
+  const wrap=$('steps'); wrap.innerHTML='';
+  seq.forEach((k,i)=>{
+    const dot=document.createElement('div');
+    dot.className='dot'+(i===idx?' active':'')+(i<idx?' done':'');
+    dot.textContent=i+1;
+    wrap.appendChild(dot);
+    if(i<seq.length-1){
+      const bar=document.createElement('div');
+      bar.className='bar'+(i<idx?' fill':'');
+      wrap.appendChild(bar);
+    }
+  });
+}
+
+function buildSingleSelect(boxId, options, onPick){
+  const box=$(boxId); box.innerHTML='';
+  options.forEach(o=>{
+    const row=document.createElement('div'); row.className='opt';
+    row.innerHTML='<div class="box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><span>'+o.label+'</span>';
+    row.addEventListener('click',()=>{
+      box.querySelectorAll('.opt').forEach(x=>x.classList.remove('on'));
+      row.classList.add('on');
+      onPick(o);
+    });
+    box.appendChild(row);
+  });
+}
 
 const overlay = document.getElementById('overlay');
 const $ = id => document.getElementById(id);
@@ -499,43 +597,70 @@ $('closeBtn').addEventListener('click',closeBooking);
 overlay.addEventListener('click',e=>{ if(e.target===overlay) closeBooking(); });
 
 function openBooking(svc){
-  state = { service:svc, step:1, date:null, time:null, opts:[], calDate:new Date() };
+  state = { service:svc, stepKey:'contact', date:null, time:null, opts:[],
+            nailType:null, serviceType:null, style:null, duration:null, calDate:new Date() };
   dayBookings = [];
   $('mTitle').textContent = SERVICES[svc].title;
   $('optTitle').textContent = SERVICES[svc].optTitle;
-  buildOptions();
+  if(MULTISTEP_SERVICES.includes(svc)){
+    buildSingleSelect('nailOpts',[{label:'Natural'},{label:'Gel'},{label:'Acrylic'}],o=>{
+      state.nailType=o.label;
+      if(o.label==='Natural') state.serviceType=null;
+      $('errNail').textContent='';
+    });
+    buildSingleSelect('serviceOpts',[{label:'Refill'},{label:'New Set (artificial tips)'}],o=>{
+      state.serviceType=o.label; $('errService').textContent='';
+    });
+    buildSingleSelect('styleOpts',[{label:'One Color (60 Min)',dur:60},{label:'Design (90 Min)',dur:90}],o=>{
+      state.style=o.label; state.duration=o.dur; $('errStyle').textContent='';
+    });
+  } else {
+    buildOptions();
+  }
   resetCalToToday();
   renderCalendar();
-  ['err1','err2','err3','err4'].forEach(e=>$(e).textContent='');
+  ['err1','err2','err3','err4','errNail','errService','errStyle'].forEach(e=>$(e).textContent='');
   document.querySelectorAll('#fName,#fSurname,#fEmail,#fPhone').forEach(i=>i.value='');
-  goStep(1);
+  goStep('contact');
   overlay.classList.add('show');
   document.body.style.overflow='hidden';
 }
 function closeBooking(){ overlay.classList.remove('show'); document.body.style.overflow=''; }
 
 document.querySelectorAll('[data-next]').forEach(b=>b.addEventListener('click',next));
-document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>goStep(state.step-1)));
+document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>{
+  const seq=getSequence();
+  const i=seq.indexOf(state.stepKey);
+  if(i>0) goStep(seq[i-1]);
+}));
 
-function goStep(n){
-  state.step=n;
-  document.querySelectorAll('.step').forEach(s=>s.classList.toggle('show', +s.dataset.step===n));
-  document.querySelectorAll('.dot').forEach(d=>{
-    const dn=+d.dataset.d;
-    d.classList.toggle('active', dn===n);
-    d.classList.toggle('done', dn<n);
-  });
-  document.querySelectorAll('.bar').forEach(b=>b.classList.toggle('fill', +b.dataset.b < n));
-  if(n===3) loadAndRenderSlots();
-  if(n===5) renderSummary();
+function goStep(key){
+  state.stepKey=key;
+  const seq=getSequence();
+  document.querySelectorAll('.step').forEach(s=>s.classList.toggle('show', s.dataset.stepkey===key));
+  renderDots(seq, key);
+  if(key==='time') loadAndRenderSlots();
+  if(key==='review') renderSummary();
+}
+
+function validateStep(key){
+  switch(key){
+    case 'contact': return validateStep1();
+    case 'nailtype': if(!state.nailType){ $('errNail').textContent='Please choose one.'; return false; } return true;
+    case 'servicetype': if(!state.serviceType){ $('errService').textContent='Please choose one.'; return false; } return true;
+    case 'style': if(!state.style){ $('errStyle').textContent='Please choose one.'; return false; } return true;
+    case 'date': if(!state.date){ $('err2').textContent='Please pick a date.'; return false; } return true;
+    case 'time': if(!state.time){ $('err3').textContent='Please choose a time.'; return false; } return true;
+    case 'options': if(state.opts.length===0){ $('err4').textContent='Pick at least one option.'; return false; } return true;
+    default: return true;
+  }
 }
 
 function next(){
-  if(state.step===1 && !validateStep1()) return;
-  if(state.step===2 && !state.date){ $('err2').textContent='Please pick a date.'; return; }
-  if(state.step===3 && !state.time){ $('err3').textContent='Please choose a time.'; return; }
-  if(state.step===4 && state.opts.length===0){ $('err4').textContent='Pick at least one option.'; return; }
-  goStep(state.step+1);
+  const seq=getSequence();
+  if(!validateStep(state.stepKey)) return;
+  const i=seq.indexOf(state.stepKey);
+  if(i < seq.length-1) goStep(seq[i+1]);
 }
 
 function validateStep1(){
@@ -624,7 +749,7 @@ async function loadAndRenderSlots(){
 
     const { data, error } = await sb
       .from('bookings')
-      .select('time, status, service')
+      .select('time, status, service, duration_minutes')
       .eq('date', dateStr(state.date))
       .in('service', servicesToCheck)
       .in('status', ['pending','approved']);
@@ -641,37 +766,27 @@ async function loadAndRenderSlots(){
 
 function renderSlots(bookings){
   const box=$('slots'); box.innerHTML='';
-  const step=SERVICES[state.service].interval;
+  const dur=currentDuration();
   const now=new Date();
   const isToday = state.date && sameDay(state.date, now);
+  const nowMin = now.getHours()*60+now.getMinutes();
+  let hasPending=false;
 
-  // Build lookup: time -> status
-  const booked = {};
-  bookings.forEach(b=>{ booked[b.time] = b.status; });
-
-  let hasPending = false;
-
-  for(let t=OPEN_MIN; t<=CLOSE_MIN-step; t+=step){
-    const hh=String(Math.floor(t/60)).padStart(2,'0'), mm=String(t%60).padStart(2,'0');
-    const label=hh+':'+mm;
+  for(let t=OPEN_MIN; t+dur<=CLOSE_MIN; t+=GRID){
+    const label=fmtMin(t);
     const btn=document.createElement('button');
-    btn.className='slot';
-    btn.textContent=label;
+    btn.className='slot'; btn.textContent=label;
 
-    const status = booked[label];
+    const status = slotStatus(t, dur, bookings);
 
-    if(isToday && t <= now.getHours()*60+now.getMinutes()){
+    if(isToday && t <= nowMin){
       btn.disabled=true;
-    } else if(status === 'approved'){
+    } else if(status==='approved'){
       // Fully taken — disabled, looks unavailable
-      btn.disabled=true;
-      btn.title='Already booked';
-    } else if(status === 'pending'){
+      btn.disabled=true; btn.title='Already booked';
+    } else if(status==='pending'){
       // Orange — reserved, pending approval
-      btn.classList.add('pending');
-      btn.disabled=true;
-      btn.title='Waiting for approval';
-      hasPending=true;
+      btn.classList.add('pending'); btn.disabled=true; btn.title='Waiting for approval'; hasPending=true;
     } else {
       // Available
       if(state.time===label) btn.classList.add('sel');
@@ -708,15 +823,23 @@ function buildOptions(){
 function fmtDate(d){ return d.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'}); }
 function renderSummary(){
   const s=SERVICES[state.service];
+  const isMulti=MULTISTEP_SERVICES.includes(state.service);
   const rows=[
     ['Service', s.title],
     ['Name', $('fName').value.trim()+' '+$('fSurname').value.trim()],
     ['Phone', $('fPhone').value.trim()],
     ['Email', $('fEmail').value.trim()],
     ['Date', fmtDate(state.date)],
-    ['Time', state.time],
-    [s.title==='Eyebrows'?'Services':'Styles', state.opts.join(', ')]
+    ['Time', state.time]
   ];
+  if(isMulti){
+    rows.push(['Nail type', state.nailType]);
+    if(state.serviceType) rows.push(['Service type', state.serviceType]);
+    rows.push(['Style', state.style]);
+    rows.push(['Duration', currentDuration()+' min']);
+  } else {
+    rows.push([s.title==='Eyebrows'?'Services':'Styles', state.opts.join(', ')]);
+  }
   $('summary').innerHTML = rows.map(r=>
     '<div class="sum-row"><span class="k">'+r[0]+'</span><span class="v">'+r[1]+'</span></div>').join('');
 }
@@ -728,6 +851,17 @@ $('confirmBtn').addEventListener('click', async ()=>{
   btn.textContent = 'Saving…';
 
   const s = SERVICES[state.service];
+  const isMulti = MULTISTEP_SERVICES.includes(state.service);
+  const duration = currentDuration();
+  let optionsText;
+  if(isMulti){
+    const parts=[state.nailType];
+    if(state.serviceType) parts.push(state.serviceType);
+    parts.push(state.style);
+    optionsText = parts.join(' · ');
+  } else {
+    optionsText = state.opts.join(', ');
+  }
   const bookingData = {
     service:   state.service,
     date:      dateStr(state.date),
@@ -735,8 +869,11 @@ $('confirmBtn').addEventListener('click', async ()=>{
     name:      $('fName').value.trim()+' '+$('fSurname').value.trim(),
     phone:     $('fPhone').value.trim(),
     email:     $('fEmail').value.trim(),
-    options:   state.opts.join(', '),
-    status:    'pending'
+    options:   optionsText,
+    status:    'pending',
+    nail_type: isMulti ? state.nailType : null,
+    service_type: isMulti ? state.serviceType : null,
+    duration_minutes: duration
   };
 
   try {
@@ -751,7 +888,7 @@ $('confirmBtn').addEventListener('click', async ()=>{
 `🌸 *New Booking — Studio Melisa* 🌸
 
 *Service:* ${s.title}
-*${s.title==='Eyebrows'?'Services':'Styles'}:* ${state.opts.join(', ')}
+*Details:* ${optionsText}
 ————————————
 *Name:* ${$('fName').value.trim()} ${$('fSurname').value.trim()}
 *Phone:* ${$('fPhone').value.trim()}
@@ -858,6 +995,7 @@ function renderAdminBookings(bookings){
           <span>📅 ${b.date}</span>
           <span>🕐 ${b.time}</span>
           <span>💅 ${escHtml(svcLabel)}</span>
+          ${b.duration_minutes?`<span>⏱ ${b.duration_minutes} min</span>`:''}
           <span>📱 ${escHtml(b.phone)}</span>
         </div>
         <div style="font-size:13px;color:var(--cocoa);margin-top:6px;">Options: ${escHtml(b.options||'—')}</div>
