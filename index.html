@@ -767,12 +767,13 @@ async function loadAndRenderSlots(){
 function renderSlots(bookings){
   const box=$('slots'); box.innerHTML='';
   const dur=currentDuration();
+  const step=(SERVICES[state.service] && SERVICES[state.service].interval) || GRID;
   const now=new Date();
   const isToday = state.date && sameDay(state.date, now);
   const nowMin = now.getHours()*60+now.getMinutes();
   let hasPending=false;
 
-  for(let t=OPEN_MIN; t+dur<=CLOSE_MIN; t+=GRID){
+  for(let t=OPEN_MIN; t+dur<=CLOSE_MIN; t+=step){
     const label=fmtMin(t);
     const btn=document.createElement('button');
     btn.className='slot'; btn.textContent=label;
