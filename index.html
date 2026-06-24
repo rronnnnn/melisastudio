@@ -80,6 +80,13 @@
   .tagline{font-family:'Cormorant Garamond',serif;font-size:clamp(17px,2.6vw,23px);
     letter-spacing:.42em;text-transform:uppercase;color:var(--cocoa);margin-top:6px;font-weight:500;}
 
+  .lang-switch{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px;}
+  .lang-opt{background:none;border:none;cursor:pointer;font-family:'Quicksand',sans-serif;font-size:14px;
+    font-weight:500;letter-spacing:.1em;color:var(--cocoa);padding:2px 4px;transition:color .2s;}
+  .lang-opt:hover{color:var(--cocoa-deep);}
+  .lang-opt.active{color:var(--cocoa-deep);font-weight:700;text-decoration:underline;text-underline-offset:4px;}
+  .lang-sep{color:var(--clay);font-size:13px;user-select:none;}
+
   .services{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:8px;}
   .card{padding:34px 24px 30px;text-align:center;cursor:pointer;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s;}
   .card:hover{transform:translateY(-6px);box-shadow:0 18px 50px rgba(122,92,69,.24),inset 0 1px 1px rgba(255,255,255,.7);}
@@ -279,35 +286,42 @@
   <!-- MAIN SITE -->
   <div class="wrap" id="mainSite">
     <header>
+      <div class="lang-switch" id="langSwitch">
+        <button class="lang-opt" data-lang="sq">SQ</button>
+        <span class="lang-sep">|</span>
+        <button class="lang-opt" data-lang="en">EN</button>
+        <span class="lang-sep">|</span>
+        <button class="lang-opt" data-lang="mk">MK</button>
+      </div>
       <img class="brand-logo" src="MstudioLogo.png" alt="Studio Melisa">
-      <div class="tagline">Nails &middot; Brows &middot; Lip Blush</div>
+      <div class="tagline" data-i18n="tagline">Nails &middot; Brows &middot; Lip Blush</div>
     </header>
 
     <section class="services">
       <div class="card glass" data-service="manicure">
         <img class="ico" src="manikyr.svg" alt="Manicure">
-        <h3>Manicure</h3>
-        <span class="book-pill">Book</span>
+        <h3 data-i18n="svc_manicure">Manicure</h3>
+        <span class="book-pill" data-i18n="book">Book</span>
       </div>
       <div class="card glass" data-service="pedicure">
         <img class="ico" src="pedikyr.svg" alt="Pedicure">
-        <h3>Pedicure</h3>
-        <span class="book-pill">Book</span>
+        <h3 data-i18n="svc_pedicure">Pedicure</h3>
+        <span class="book-pill" data-i18n="book">Book</span>
       </div>
       <div class="card glass" data-service="eyebrows">
         <img class="ico" src="eyebrows.svg" alt="Eyebrows">
-        <h3>Eyebrows</h3>
-        <span class="book-pill">Book</span>
+        <h3 data-i18n="svc_eyebrows">Eyebrows</h3>
+        <span class="book-pill" data-i18n="book">Book</span>
       </div>
       <div class="card glass" data-service="lipblush">
         <img class="ico" src="lipink.svg" alt="Lip Blush">
-        <h3>Lip Blush</h3>
-        <span class="book-pill">Book</span>
+        <h3 data-i18n="svc_lipblush">Lip Blush</h3>
+        <span class="book-pill" data-i18n="book">Book</span>
       </div>
     </section>
 
     <footer>
-      Booked with love at <span class="fb">Studio Melisa</span>
+      <span data-i18n="footer_booked">Booked with love at</span> <span class="fb">Studio Melisa</span>
     </footer>
   </div>
 
@@ -357,7 +371,7 @@
       <div class="modal-top">
         <div>
           <div class="modal-title" id="mTitle">Manicure</div>
-          <div class="modal-sub">Book your appointment</div>
+          <div class="modal-sub" data-i18n="modal_sub">Book your appointment</div>
         </div>
         <button class="close" id="closeBtn" aria-label="Close">&times;</button>
       </div>
@@ -366,53 +380,53 @@
 
       <!-- CONTACT -->
       <div class="step show" data-stepkey="contact">
-        <h4>Your details</h4>
+        <h4 data-i18n="h_contact">Your details</h4>
         <div class="two">
-          <div class="field"><label>Name</label><input id="fName" placeholder="Name" autocomplete="given-name"></div>
-          <div class="field"><label>Surname</label><input id="fSurname" placeholder="Surname" autocomplete="family-name"></div>
+          <div class="field"><label data-i18n="lbl_name">Name</label><input id="fName" placeholder="Name" data-i18n-placeholder="lbl_name" autocomplete="given-name"></div>
+          <div class="field"><label data-i18n="lbl_surname">Surname</label><input id="fSurname" placeholder="Surname" data-i18n-placeholder="lbl_surname" autocomplete="family-name"></div>
         </div>
-        <div class="field"><label>Email</label><input id="fEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>
-        <div class="field"><label>Phone number</label><input id="fPhone" type="tel" placeholder="+389 70 123 456" autocomplete="tel"></div>
+        <div class="field"><label data-i18n="lbl_email">Email</label><input id="fEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>
+        <div class="field"><label data-i18n="lbl_phone">Phone number</label><input id="fPhone" type="tel" placeholder="+389 70 123 456" autocomplete="tel"></div>
         <div class="err" id="err1"></div>
-        <div class="nav"><button class="btn btn-primary" data-next>Continue</button></div>
+        <div class="nav"><button class="btn btn-primary" data-next data-i18n="btn_continue">Continue</button></div>
       </div>
 
       <!-- NAIL TYPE (manicure/pedicure) -->
       <div class="step" data-stepkey="nailtype">
-        <h4>What type of nails do you have?</h4>
+        <h4 data-i18n="h_nailtype">What type of nails do you have?</h4>
         <div class="opts" id="nailOpts"></div>
         <div class="err" id="errNail"></div>
         <div class="nav">
-          <button class="btn btn-ghost" data-back>Back</button>
-          <button class="btn btn-primary" data-next>Continue</button>
+          <button class="btn btn-ghost" data-back data-i18n="btn_back">Back</button>
+          <button class="btn btn-primary" data-next data-i18n="btn_continue">Continue</button>
         </div>
       </div>
 
       <!-- SERVICE TYPE (skipped if Natural) -->
       <div class="step" data-stepkey="servicetype">
-        <h4>What service do you need?</h4>
+        <h4 data-i18n="h_servicetype">What service do you need?</h4>
         <div class="opts" id="serviceOpts"></div>
         <div class="err" id="errService"></div>
         <div class="nav">
-          <button class="btn btn-ghost" data-back>Back</button>
-          <button class="btn btn-primary" data-next>Continue</button>
+          <button class="btn btn-ghost" data-back data-i18n="btn_back">Back</button>
+          <button class="btn btn-primary" data-next data-i18n="btn_continue">Continue</button>
         </div>
       </div>
 
       <!-- STYLE (sets duration) -->
       <div class="step" data-stepkey="style">
-        <h4>Choose your style</h4>
+        <h4 data-i18n="h_style">Choose your style</h4>
         <div class="opts" id="styleOpts"></div>
         <div class="err" id="errStyle"></div>
         <div class="nav">
-          <button class="btn btn-ghost" data-back>Back</button>
-          <button class="btn btn-primary" data-next>Continue</button>
+          <button class="btn btn-ghost" data-back data-i18n="btn_back">Back</button>
+          <button class="btn btn-primary" data-next data-i18n="btn_continue">Continue</button>
         </div>
       </div>
 
       <!-- DATE -->
       <div class="step" data-stepkey="date">
-        <h4>Pick a date</h4>
+        <h4 data-i18n="h_date">Pick a date</h4>
         <div class="cal-head">
           <button id="prevM" aria-label="Previous month">&#8249;</button>
           <div class="cal-month" id="calMonth"></div>
@@ -421,23 +435,23 @@
         <div class="cal-grid" id="calGrid"></div>
         <div class="err" id="err2"></div>
         <div class="nav">
-          <button class="btn btn-ghost" data-back>Back</button>
-          <button class="btn btn-primary" data-next>Continue</button>
+          <button class="btn btn-ghost" data-back data-i18n="btn_back">Back</button>
+          <button class="btn btn-primary" data-next data-i18n="btn_continue">Continue</button>
         </div>
       </div>
 
       <!-- TIME -->
       <div class="step" data-stepkey="time">
-        <h4>Choose a time</h4>
+        <h4 data-i18n="h_time">Choose a time</h4>
         <div class="slot-legend" id="slotLegend" style="display:none;">
           <div class="legend-dot"></div>
-          <span>Waiting for approval — slot reserved</span>
+          <span data-i18n="legend">Waiting for approval — slot reserved</span>
         </div>
         <div class="slots" id="slots"></div>
         <div class="err" id="err3"></div>
         <div class="nav">
-          <button class="btn btn-ghost" data-back>Back</button>
-          <button class="btn btn-primary" data-next>Continue</button>
+          <button class="btn btn-ghost" data-back data-i18n="btn_back">Back</button>
+          <button class="btn btn-primary" data-next data-i18n="btn_continue">Continue</button>
         </div>
       </div>
 
@@ -447,19 +461,19 @@
         <div class="opts" id="opts"></div>
         <div class="err" id="err4"></div>
         <div class="nav">
-          <button class="btn btn-ghost" data-back>Back</button>
-          <button class="btn btn-primary" data-next>Review</button>
+          <button class="btn btn-ghost" data-back data-i18n="btn_back">Back</button>
+          <button class="btn btn-primary" data-next data-i18n="btn_review">Review</button>
         </div>
       </div>
 
       <!-- REVIEW -->
       <div class="step" data-stepkey="review">
         <div class="done-ico">&#127800;</div>
-        <h4 style="text-align:center">Review your booking</h4>
+        <h4 style="text-align:center" data-i18n="h_review">Review your booking</h4>
         <div class="summary" id="summary"></div>
         <div class="nav">
-          <button class="btn btn-ghost" data-back>Back</button>
-          <button class="btn btn-wa" id="confirmBtn">Send to Studio Melisa</button>
+          <button class="btn btn-ghost" data-back data-i18n="btn_back">Back</button>
+          <button class="btn btn-wa" id="confirmBtn" data-i18n="btn_send">Send to Studio Melisa</button>
         </div>
       </div>
 
@@ -470,9 +484,9 @@
   <div class="overlay" id="sentOverlay">
     <div class="modal glass sent-modal">
       <div class="sent-ico">&#9989;</div>
-      <div class="sent-title">Your booking request has been sent!</div>
-      <div class="sent-msg">Please check your email for confirmation from Studio Melisa.</div>
-      <button class="btn btn-wa sent-close" id="sentCloseBtn">Close</button>
+      <div class="sent-title" data-i18n="sent_title">Your booking request has been sent!</div>
+      <div class="sent-msg" data-i18n="sent_msg">Please check your email for confirmation from Studio Melisa.</div>
+      <button class="btn btn-wa sent-close" id="sentCloseBtn" data-i18n="btn_close">Close</button>
     </div>
   </div>
 
@@ -494,6 +508,140 @@ const STUDIO_EMAIL = "onboarding@resend.dev"; // replace with verified domain in
 /* ============================================================ */
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+/* ============================================================
+   I18N — plain translation object (no external library)
+   Default language: SQ. Persisted in localStorage.
+   Only static UI chrome is translated; booking data (names,
+   dates, chosen option values) is left in its canonical form.
+   ============================================================ */
+const I18N = {
+  sq: {
+    tagline:"Thonjtë · Vetullat · Lip Blush",
+    svc_manicure:"Manikyr", svc_pedicure:"Pedikyr", svc_eyebrows:"Vetullat", svc_lipblush:"Lip Blush",
+    book:"Rezervo", footer_booked:"Rezervuar me dashuri në",
+    modal_sub:"Rezervoni terminin tuaj",
+    h_contact:"Të dhënat tuaja", h_nailtype:"Çfarë lloji thonjsh keni?",
+    h_servicetype:"Cilin shërbim ju nevojitet?", h_style:"Zgjidhni stilin tuaj",
+    h_date:"Zgjidhni një datë", h_time:"Zgjidhni një orë", h_review:"Rishikoni rezervimin tuaj",
+    lbl_name:"Emri", lbl_surname:"Mbiemri", lbl_email:"Email", lbl_phone:"Numri i telefonit",
+    btn_continue:"Vazhdo", btn_back:"Prapa", btn_review:"Rishiko",
+    btn_send:"Dërgo te Studio Melisa", btn_saving:"Duke ruajtur…", btn_close:"Mbyll",
+    legend:"Në pritje të miratimit — termini i rezervuar",
+    opt_manicure:"Zgjidhni stilet e thonjve", opt_pedicure:"Zgjidhni stilet e thonjve",
+    opt_eyebrows:"Zgjidhni shërbimet e vetullave", opt_lipblush:"Zgjidhni stilet e Lip Blush",
+    sent_title:"Kërkesa juaj për rezervim u dërgua!",
+    sent_msg:"Ju lutemi kontrolloni email-in tuaj për konfirmim nga Studio Melisa.",
+    err_choose:"Ju lutemi zgjidhni një.", err_date:"Ju lutemi zgjidhni një datë.",
+    err_time:"Ju lutemi zgjidhni një orë.", err_option:"Zgjidhni të paktën një opsion.",
+    err_namesur:"Emri dhe mbiemri janë të detyrueshëm.", err_email:"Shkruani një email të vlefshëm.",
+    err_phone:"Shkruani një numër telefoni të vlefshëm.",
+    loading_times:"Duke ngarkuar oraret e lira…",
+    tip_booked:"Tashmë i rezervuar", tip_pending:"Në pritje të miratimit",
+    sum_service:"Shërbimi", sum_name:"Emri", sum_phone:"Telefoni", sum_email:"Email",
+    sum_date:"Data", sum_time:"Ora", sum_nailtype:"Lloji i thonjve", sum_servicetype:"Lloji i shërbimit",
+    sum_style:"Stili", sum_duration:"Kohëzgjatja", unit_min:"min",
+    sum_services:"Shërbimet", sum_styles:"Stilet"
+  },
+  en: {
+    tagline:"Nails · Brows · Lip Blush",
+    svc_manicure:"Manicure", svc_pedicure:"Pedicure", svc_eyebrows:"Eyebrows", svc_lipblush:"Lip Blush",
+    book:"Book", footer_booked:"Booked with love at",
+    modal_sub:"Book your appointment",
+    h_contact:"Your details", h_nailtype:"What type of nails do you have?",
+    h_servicetype:"What service do you need?", h_style:"Choose your style",
+    h_date:"Pick a date", h_time:"Choose a time", h_review:"Review your booking",
+    lbl_name:"Name", lbl_surname:"Surname", lbl_email:"Email", lbl_phone:"Phone number",
+    btn_continue:"Continue", btn_back:"Back", btn_review:"Review",
+    btn_send:"Send to Studio Melisa", btn_saving:"Saving…", btn_close:"Close",
+    legend:"Waiting for approval — slot reserved",
+    opt_manicure:"Select your nail styles", opt_pedicure:"Select your nail styles",
+    opt_eyebrows:"Select your brow services", opt_lipblush:"Select your lip blush styles",
+    sent_title:"Your booking request has been sent!",
+    sent_msg:"Please check your email for confirmation from Studio Melisa.",
+    err_choose:"Please choose one.", err_date:"Please pick a date.",
+    err_time:"Please choose a time.", err_option:"Pick at least one option.",
+    err_namesur:"Name and surname are required.", err_email:"Enter a valid email.",
+    err_phone:"Enter a valid phone number.",
+    loading_times:"Loading available times…",
+    tip_booked:"Already booked", tip_pending:"Waiting for approval",
+    sum_service:"Service", sum_name:"Name", sum_phone:"Phone", sum_email:"Email",
+    sum_date:"Date", sum_time:"Time", sum_nailtype:"Nail type", sum_servicetype:"Service type",
+    sum_style:"Style", sum_duration:"Duration", unit_min:"min",
+    sum_services:"Services", sum_styles:"Styles"
+  },
+  mk: {
+    tagline:"Нокти · Веѓи · Lip Blush",
+    svc_manicure:"Маникир", svc_pedicure:"Педикир", svc_eyebrows:"Веѓи", svc_lipblush:"Lip Blush",
+    book:"Резервирај", footer_booked:"Резервирано со љубов во",
+    modal_sub:"Резервирајте го вашиот термин",
+    h_contact:"Вашите податоци", h_nailtype:"Каков тип на нокти имате?",
+    h_servicetype:"Која услуга ви треба?", h_style:"Изберете го вашиот стил",
+    h_date:"Изберете датум", h_time:"Изберете време", h_review:"Прегледајте ја вашата резервација",
+    lbl_name:"Име", lbl_surname:"Презиме", lbl_email:"Е-пошта", lbl_phone:"Телефонски број",
+    btn_continue:"Продолжи", btn_back:"Назад", btn_review:"Преглед",
+    btn_send:"Испрати до Studio Melisa", btn_saving:"Се зачувува…", btn_close:"Затвори",
+    legend:"Се чека одобрување — терминот е резервиран",
+    opt_manicure:"Изберете стилови за нокти", opt_pedicure:"Изберете стилови за нокти",
+    opt_eyebrows:"Изберете услуги за веѓи", opt_lipblush:"Изберете стилови за Lip Blush",
+    sent_title:"Вашето барање за резервација е испратено!",
+    sent_msg:"Ве молиме проверете ја вашата е-пошта за потврда од Studio Melisa.",
+    err_choose:"Ве молиме изберете една.", err_date:"Ве молиме изберете датум.",
+    err_time:"Ве молиме изберете време.", err_option:"Изберете барем една опција.",
+    err_namesur:"Името и презимето се задолжителни.", err_email:"Внесете валидна е-пошта.",
+    err_phone:"Внесете валиден телефонски број.",
+    loading_times:"Се вчитуваат слободните термини…",
+    tip_booked:"Веќе резервиран", tip_pending:"Се чека одобрување",
+    sum_service:"Услуга", sum_name:"Име", sum_phone:"Телефон", sum_email:"Е-пошта",
+    sum_date:"Датум", sum_time:"Време", sum_nailtype:"Тип на нокти", sum_servicetype:"Тип на услуга",
+    sum_style:"Стил", sum_duration:"Времетраење", unit_min:"мин",
+    sum_services:"Услуги", sum_styles:"Стилови"
+  }
+};
+
+let currentLang = localStorage.getItem('melisaLang') || 'sq';
+if(!I18N[currentLang]) currentLang = 'sq';
+
+function t(key){
+  const dict = I18N[currentLang] || I18N.sq;
+  return (key in dict) ? dict[key] : (I18N.en[key] || key);
+}
+function svcTitle(svcKey){ return t('svc_'+svcKey); }
+
+function applyStaticI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    el.textContent = t(el.getAttribute('data-i18n'));
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+    el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+  });
+  document.querySelectorAll('.lang-opt').forEach(b=>{
+    b.classList.toggle('active', b.dataset.lang===currentLang);
+  });
+  document.documentElement.setAttribute('lang', currentLang);
+}
+
+/* Re-render dynamic (JS-generated) text when language changes mid-flow */
+function refreshDynamicI18n(){
+  if(!state || !state.service) return;
+  const svc = state.service;
+  const mt = document.getElementById('mTitle'); if(mt) mt.textContent = svcTitle(svc);
+  const ot = document.getElementById('optTitle'); if(ot) ot.textContent = t('opt_'+svc);
+  if(state.stepKey==='review') renderSummary();
+}
+
+function setLang(lang){
+  if(!I18N[lang]) return;
+  currentLang = lang;
+  localStorage.setItem('melisaLang', lang);
+  applyStaticI18n();
+  refreshDynamicI18n();
+}
+
+document.querySelectorAll('.lang-opt').forEach(btn=>{
+  btn.addEventListener('click',()=>setLang(btn.dataset.lang));
+});
+applyStaticI18n();
 
 /* Services that share a worker (Melisa) — pedicure is a different worker */
 const SHARED_WORKER_SERVICES = ['manicure', 'eyebrows', 'lipblush'];
@@ -611,8 +759,8 @@ function openBooking(svc){
   state = { service:svc, stepKey:'contact', date:null, time:null, opts:[],
             nailType:null, serviceType:null, style:null, duration:null, calDate:new Date() };
   dayBookings = [];
-  $('mTitle').textContent = SERVICES[svc].title;
-  $('optTitle').textContent = SERVICES[svc].optTitle;
+  $('mTitle').textContent = svcTitle(svc);
+  $('optTitle').textContent = t('opt_'+svc);
   if(MULTISTEP_SERVICES.includes(svc)){
     buildSingleSelect('nailOpts',[{label:'Natural'},{label:'Gel'},{label:'Acrylic'}],o=>{
       state.nailType=o.label;
@@ -657,12 +805,12 @@ function goStep(key){
 function validateStep(key){
   switch(key){
     case 'contact': return validateStep1();
-    case 'nailtype': if(!state.nailType){ $('errNail').textContent='Please choose one.'; return false; } return true;
-    case 'servicetype': if(!state.serviceType){ $('errService').textContent='Please choose one.'; return false; } return true;
-    case 'style': if(!state.style){ $('errStyle').textContent='Please choose one.'; return false; } return true;
-    case 'date': if(!state.date){ $('err2').textContent='Please pick a date.'; return false; } return true;
-    case 'time': if(!state.time){ $('err3').textContent='Please choose a time.'; return false; } return true;
-    case 'options': if(state.opts.length===0){ $('err4').textContent='Pick at least one option.'; return false; } return true;
+    case 'nailtype': if(!state.nailType){ $('errNail').textContent=t('err_choose'); return false; } return true;
+    case 'servicetype': if(!state.serviceType){ $('errService').textContent=t('err_choose'); return false; } return true;
+    case 'style': if(!state.style){ $('errStyle').textContent=t('err_choose'); return false; } return true;
+    case 'date': if(!state.date){ $('err2').textContent=t('err_date'); return false; } return true;
+    case 'time': if(!state.time){ $('err3').textContent=t('err_time'); return false; } return true;
+    case 'options': if(state.opts.length===0){ $('err4').textContent=t('err_option'); return false; } return true;
     default: return true;
   }
 }
@@ -677,9 +825,9 @@ function next(){
 function validateStep1(){
   const name=$('fName').value.trim(), sur=$('fSurname').value.trim(),
         email=$('fEmail').value.trim(), phone=$('fPhone').value.trim();
-  if(!name||!sur){ $('err1').textContent='Name and surname are required.'; return false; }
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ $('err1').textContent='Enter a valid email.'; return false; }
-  if(phone.replace(/\D/g,'').length<6){ $('err1').textContent='Enter a valid phone number.'; return false; }
+  if(!name||!sur){ $('err1').textContent=t('err_namesur'); return false; }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ $('err1').textContent=t('err_email'); return false; }
+  if(phone.replace(/\D/g,'').length<6){ $('err1').textContent=t('err_phone'); return false; }
   $('err1').textContent=''; return true;
 }
 
@@ -742,7 +890,7 @@ function dateStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(
 /* ---- time slots with Supabase ---- */
 async function loadAndRenderSlots(){
   const box=$('slots');
-  box.innerHTML='<div class="slots-loading">Loading available times…</div>';
+  box.innerHTML='<div class="slots-loading">'+t('loading_times')+'</div>';
   $('slotLegend').style.display='none';
 
   if(!state.date){ renderSlots([]); return; }
@@ -795,10 +943,10 @@ function renderSlots(bookings){
       btn.disabled=true;
     } else if(status==='approved'){
       // Fully taken — disabled, looks unavailable
-      btn.disabled=true; btn.title='Already booked';
+      btn.disabled=true; btn.title=t('tip_booked');
     } else if(status==='pending'){
       // Orange — reserved, pending approval
-      btn.classList.add('pending'); btn.disabled=true; btn.title='Waiting for approval'; hasPending=true;
+      btn.classList.add('pending'); btn.disabled=true; btn.title=t('tip_pending'); hasPending=true;
     } else {
       // Available
       if(state.time===label) btn.classList.add('sel');
@@ -837,20 +985,20 @@ function renderSummary(){
   const s=SERVICES[state.service];
   const isMulti=MULTISTEP_SERVICES.includes(state.service);
   const rows=[
-    ['Service', s.title],
-    ['Name', $('fName').value.trim()+' '+$('fSurname').value.trim()],
-    ['Phone', $('fPhone').value.trim()],
-    ['Email', $('fEmail').value.trim()],
-    ['Date', fmtDate(state.date)],
-    ['Time', state.time]
+    [t('sum_service'), svcTitle(state.service)],
+    [t('sum_name'), $('fName').value.trim()+' '+$('fSurname').value.trim()],
+    [t('sum_phone'), $('fPhone').value.trim()],
+    [t('sum_email'), $('fEmail').value.trim()],
+    [t('sum_date'), fmtDate(state.date)],
+    [t('sum_time'), state.time]
   ];
   if(isMulti){
-    rows.push(['Nail type', state.nailType]);
-    if(state.serviceType) rows.push(['Service type', state.serviceType]);
-    rows.push(['Style', state.style]);
-    rows.push(['Duration', currentDuration()+' min']);
+    rows.push([t('sum_nailtype'), state.nailType]);
+    if(state.serviceType) rows.push([t('sum_servicetype'), state.serviceType]);
+    rows.push([t('sum_style'), state.style]);
+    rows.push([t('sum_duration'), currentDuration()+' '+t('unit_min')]);
   } else {
-    rows.push([s.title==='Eyebrows'?'Services':'Styles', state.opts.join(', ')]);
+    rows.push([state.service==='eyebrows'?t('sum_services'):t('sum_styles'), state.opts.join(', ')]);
   }
   $('summary').innerHTML = rows.map(r=>
     '<div class="sum-row"><span class="k">'+r[0]+'</span><span class="v">'+r[1]+'</span></div>').join('');
@@ -860,7 +1008,7 @@ function renderSummary(){
 $('confirmBtn').addEventListener('click', async ()=>{
   const btn = $('confirmBtn');
   btn.disabled = true;
-  btn.textContent = 'Saving…';
+  btn.textContent = t('btn_saving');
 
   const s = SERVICES[state.service];
   const isMulti = MULTISTEP_SERVICES.includes(state.service);
@@ -913,7 +1061,7 @@ Please confirm or let me know if you'd like to reschedule. Thank you! 💕`;
 
   window.open('https://wa.me/'+SALON_WHATSAPP+'?text='+encodeURIComponent(msg),'_blank');
   btn.disabled = false;
-  btn.textContent = 'Send to Studio Melisa';
+  btn.textContent = t('btn_send');
 
   // Confirmation popup
   document.getElementById('sentOverlay').classList.add('show');
