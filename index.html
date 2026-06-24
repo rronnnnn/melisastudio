@@ -100,6 +100,11 @@
   .modal-sub{font-size:13px;color:var(--cocoa);letter-spacing:.05em;}
   .close{border:none;background:var(--glass-strong);width:38px;height:38px;border-radius:50%;
     cursor:pointer;font-size:18px;color:var(--cocoa-deep);box-shadow:var(--shadow-soft);}
+  .sent-modal{max-width:420px;text-align:center;padding:38px 30px 32px;}
+  .sent-ico{font-size:46px;line-height:1;margin-bottom:14px;}
+  .sent-title{font-family:'Cormorant Garamond',serif;font-size:25px;font-weight:600;color:var(--espresso);margin-bottom:10px;}
+  .sent-msg{font-size:14.5px;color:var(--cocoa);line-height:1.55;margin-bottom:26px;}
+  .sent-close{margin:0 auto;display:inline-block;}
   .close:hover{background:#fff;}
 
   .steps{display:flex;align-items:center;justify-content:center;gap:0;margin:22px 0 26px;}
@@ -456,12 +461,18 @@
           <button class="btn btn-ghost" data-back>Back</button>
           <button class="btn btn-wa" id="confirmBtn">Send to Studio Melisa</button>
         </div>
-        <div class="note">
-          Tapping send opens WhatsApp with your booking pre-written to Studio Melisa.
-          Melisa confirms or declines by replying in that same chat &mdash; so you both stay in the loop.
-        </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- BOOKING SENT CONFIRMATION -->
+  <div class="overlay" id="sentOverlay">
+    <div class="modal glass sent-modal">
+      <div class="sent-ico">&#9989;</div>
+      <div class="sent-title">Your booking request has been sent!</div>
+      <div class="sent-msg">Please check your email for confirmation from Studio Melisa.</div>
+      <button class="btn btn-wa sent-close" id="sentCloseBtn">Close</button>
     </div>
   </div>
 
@@ -903,7 +914,16 @@ Please confirm or let me know if you'd like to reschedule. Thank you! 💕`;
   window.open('https://wa.me/'+SALON_WHATSAPP+'?text='+encodeURIComponent(msg),'_blank');
   btn.disabled = false;
   btn.textContent = 'Send to Studio Melisa';
+
+  // Confirmation popup
+  document.getElementById('sentOverlay').classList.add('show');
 });
+
+/* ---- booking-sent confirmation popup ---- */
+const sentOverlay = document.getElementById('sentOverlay');
+function closeSent(){ sentOverlay.classList.remove('show'); }
+document.getElementById('sentCloseBtn').addEventListener('click',closeSent);
+sentOverlay.addEventListener('click',e=>{ if(e.target===sentOverlay) closeSent(); });
 
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeBooking(); });
 
