@@ -1003,16 +1003,16 @@ function renderSlots(bookings){
   const nowMin = now.getHours()*60+now.getMinutes();
   let hasPending=false;
 
-  for(let t=OPEN_MIN; t+dur<=CLOSE_MIN; t+=step){
-    const label=fmtMin(t);
+  for(let min=OPEN_MIN; min+dur<=CLOSE_MIN; min+=step){
+    const label=fmtMin(min);
     const btn=document.createElement('button');
     btn.className='slot'; btn.textContent=label;
 
-    const status = slotStatus(t, dur, bookings);
+    const status = slotStatus(min, dur, bookings);
     // a manually blocked hour behaves like a 30-min booking the slot can't overlap
-    const isBlockedHour = [...blockedHoursForDay].some(bt=>overlaps(t, dur, toMin(bt), 30));
+    const isBlockedHour = [...blockedHoursForDay].some(bt=>overlaps(min, dur, toMin(bt), 30));
 
-    if(isToday && t <= nowMin){
+    if(isToday && min <= nowMin){
       btn.disabled=true;
     } else if(isBlockedHour){
       // Treated as unavailable, same as a taken slot
@@ -1418,8 +1418,8 @@ async function renderBlockHours(){
   await fetchBlockedHoursAdmin();
 
   const grid=$('blkHoursGrid'); grid.innerHTML='';
-  for(let t=OPEN_MIN; t<CLOSE_MIN; t+=30){
-    const label=fmtMin(t);
+  for(let min=OPEN_MIN; min<CLOSE_MIN; min+=30){
+    const label=fmtMin(min);
     const btn=document.createElement('button');
     btn.className='slot'; btn.textContent=label;
     const isBlocked=adminBlockedHours.has(label);
