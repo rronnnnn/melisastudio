@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       "Authorization": `Bearer ${RESEND_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ from: STUDIO_EMAIL, to, subject, html }),
+    body: JSON.stringify({ from: "Studio Melisa <bookings@studiomelisa.com>", to, subject, html }),
   });
 
   const data = await res.json();
