@@ -149,6 +149,8 @@
   .day:hover:not(:disabled){background:rgba(255,255,255,.85);}
   .day.empty{background:transparent;cursor:default;}
   .day:disabled{opacity:.28;cursor:not-allowed;}
+  /* blocked day (admin) = same muted/greyed-out look as past days (.day:disabled), but still clickable */
+  .day.blocked{opacity:.28;}
   .day.sel{background:linear-gradient(135deg,var(--cocoa),var(--cocoa-deep));color:#fff;box-shadow:0 5px 14px rgba(122,92,69,.4);}
 
   .slots{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;max-height:300px;overflow-y:auto;padding:4px 2px;}
@@ -172,6 +174,13 @@
   /* slots loading state */
   .slots-loading{text-align:center;color:var(--cocoa);font-size:13px;padding:20px 0;opacity:.7;}
 
+  /* admin block-hours grid — reuses .slot button styling */
+  .admin-slots{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;}
+  /* blocked time = nude/brown palette, clearly distinct from an open slot */
+  .admin-slots .slot.blocked{background:var(--clay);color:var(--espresso);
+    border:1px solid var(--cocoa);font-weight:600;text-decoration:line-through;opacity:1;}
+  .admin-slots .slot.blocked:hover{background:var(--cocoa);color:#fff;}
+
   .opts{display:grid;gap:11px;}
   .opt{display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:16px;cursor:pointer;
     background:rgba(255,255,255,.42);border:1px solid var(--glass-line);transition:.2s;}
@@ -182,6 +191,12 @@
   .box svg{width:13px;height:13px;stroke:#fff;stroke-width:3;fill:none;opacity:0;transition:.2s;}
   .opt.on .box svg{opacity:1;}
   .opt span{font-size:15.5px;font-weight:500;}
+
+  .notice{display:none;align-items:flex-start;gap:11px;margin-top:14px;padding:14px 16px;border-radius:16px;
+    background:rgba(216,191,169,.28);border:1px solid var(--clay);color:var(--cocoa-deep);
+    font-size:13.5px;line-height:1.5;}
+  .notice.show{display:flex;}
+  .notice svg{width:18px;height:18px;flex:none;margin-top:1px;stroke:var(--cocoa-deep);stroke-width:2;fill:none;}
 
   .nav{display:flex;gap:12px;margin-top:24px;}
   .btn{flex:1;padding:14px;border:none;border-radius:16px;font-family:'Quicksand',sans-serif;font-weight:600;font-size:15px;
@@ -249,6 +264,10 @@
     font-weight:600;font-size:14px;cursor:pointer;background:rgba(239,68,68,.1);
     color:#b91c1c;border:1px solid rgba(239,68,68,.25);transition:.2s;}
   .btn-reject:hover{background:rgba(239,68,68,.2);}
+  .btn-free{flex:1;padding:10px;border:none;border-radius:12px;font-family:'Quicksand',sans-serif;
+    font-weight:600;font-size:14px;cursor:pointer;background:var(--glass-strong);
+    color:var(--cocoa-deep);border:1px solid var(--clay);transition:.2s;}
+  .btn-free:hover{background:#fff;}
 
   .admin-empty{text-align:center;padding:48px 20px;color:var(--cocoa);}
   .admin-empty .ico{font-size:48px;margin-bottom:12px;}
@@ -268,7 +287,7 @@
   }
   @media(max-width:680px){
     .two{grid-template-columns:1fr;}
-    .slots{grid-template-columns:repeat(3,1fr);}
+    .slots,.admin-slots{grid-template-columns:repeat(3,1fr);}
     .card .ico{width:80px !important;height:80px !important;}
     .booking-card-top{flex-direction:column;}
   }
@@ -355,6 +374,14 @@
         <div style="font-size:12.5px;color:var(--cocoa);margin-top:10px;">Tap a day to block or unblock it. Blocked days can't be booked.</div>
       </div>
 
+      <!-- Block Hours Today -->
+      <div class="admin-section-title">Block Hours Today</div>
+      <div class="glass" style="padding:20px 22px;margin-bottom:24px;">
+        <div id="blkHoursDate" style="font-size:13px;font-weight:600;color:var(--cocoa-deep);margin-bottom:14px;"></div>
+        <div class="admin-slots" id="blkHoursGrid"></div>
+        <div style="font-size:12.5px;color:var(--cocoa);margin-top:12px;">Tap a time to block or unblock it for today. Blocked times can't be booked.</div>
+      </div>
+
       <div class="admin-filter">
         <button class="filter-btn active" data-filter="pending">⏳ Waiting for approval</button>
         <button class="filter-btn" data-filter="approved">✓ Approved</button>
@@ -395,6 +422,10 @@
       <div class="step" data-stepkey="nailtype">
         <h4 data-i18n="h_nailtype">What type of nails do you have?</h4>
         <div class="opts" id="nailOpts"></div>
+        <div class="notice" id="acrylicNotice">
+          <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+          <span data-i18n="acrylic_warn">Please note: if you currently have acrylic nails, make sure to have them removed before your appointment — our studio does not offer acrylic removal services.</span>
+        </div>
         <div class="err" id="errNail"></div>
         <div class="nav">
           <button class="btn btn-ghost" data-back data-i18n="btn_back">Back</button>
@@ -510,6 +541,29 @@ const STUDIO_EMAIL = "onboarding@resend.dev"; // replace with verified domain in
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 /* ============================================================
+   SUPABASE MIGRATION — run this manually in the SQL editor
+   for the "Block Hours Today" admin feature:
+
+   create table if not exists public.blocked_hours (
+     id         bigint generated always as identity primary key,
+     date       date not null,
+     time       text not null,
+     created_at timestamptz not null default now(),
+     unique (date, time)
+   );
+
+   alter table public.blocked_hours enable row level security;
+
+   -- mirror the existing blocked_days policies (anon read + write)
+   create policy "blocked_hours_select" on public.blocked_hours
+     for select using (true);
+   create policy "blocked_hours_insert" on public.blocked_hours
+     for insert with check (true);
+   create policy "blocked_hours_delete" on public.blocked_hours
+     for delete using (true);
+   ============================================================ */
+
+/* ============================================================
    I18N — plain translation object (no external library)
    Default language: SQ. Persisted in localStorage.
    Only static UI chrome is translated; booking data (names,
@@ -523,6 +577,7 @@ const I18N = {
     modal_sub:"Rezervoni terminin tuaj",
     h_contact:"Të dhënat tuaja", h_nailtype:"Çfarë lloji thonjsh keni?",
     h_servicetype:"Cilin shërbim ju nevojitet?", h_style:"Zgjidhni stilin tuaj",
+    acrylic_warn:"Ju lutemi vini re: nëse aktualisht keni thonj akrilikë, sigurohuni që t'i hiqni para terminit tuaj — studio jonë nuk ofron shërbim për heqjen e akrilikut.",
     h_date:"Zgjidhni një datë", h_time:"Zgjidhni një orë", h_review:"Rishikoni rezervimin tuaj",
     lbl_name:"Emri", lbl_surname:"Mbiemri", lbl_email:"Email", lbl_phone:"Numri i telefonit",
     btn_continue:"Vazhdo", btn_back:"Prapa", btn_review:"Rishiko",
@@ -550,6 +605,7 @@ const I18N = {
     modal_sub:"Book your appointment",
     h_contact:"Your details", h_nailtype:"What type of nails do you have?",
     h_servicetype:"What service do you need?", h_style:"Choose your style",
+    acrylic_warn:"Please note: if you currently have acrylic nails, make sure to have them removed before your appointment — our studio does not offer acrylic removal services.",
     h_date:"Pick a date", h_time:"Choose a time", h_review:"Review your booking",
     lbl_name:"Name", lbl_surname:"Surname", lbl_email:"Email", lbl_phone:"Phone number",
     btn_continue:"Continue", btn_back:"Back", btn_review:"Review",
@@ -577,6 +633,7 @@ const I18N = {
     modal_sub:"Резервирајте го вашиот термин",
     h_contact:"Вашите податоци", h_nailtype:"Каков тип на нокти имате?",
     h_servicetype:"Која услуга ви треба?", h_style:"Изберете го вашиот стил",
+    acrylic_warn:"Ве молиме имајте предвид: доколку моментално имате акрилни нокти, погрижете се да ги отстраните пред вашиот термин — нашето студио не нуди услуга за отстранување на акрил.",
     h_date:"Изберете датум", h_time:"Изберете време", h_review:"Прегледајте ја вашата резервација",
     lbl_name:"Име", lbl_surname:"Презиме", lbl_email:"Е-пошта", lbl_phone:"Телефонски број",
     btn_continue:"Продолжи", btn_back:"Назад", btn_review:"Преглед",
@@ -765,12 +822,13 @@ function openBooking(svc){
     buildSingleSelect('nailOpts',[{label:'Natural'},{label:'Gel'},{label:'Acrylic'}],o=>{
       state.nailType=o.label;
       if(o.label==='Natural') state.serviceType=null;
+      $('acrylicNotice').classList.toggle('show', o.label==='Acrylic');
       $('errNail').textContent='';
     });
     buildSingleSelect('serviceOpts',[{label:'Refill'},{label:'New Set (artificial tips)'}],o=>{
       state.serviceType=o.label; $('errService').textContent='';
     });
-    buildSingleSelect('styleOpts',[{label:'One Color (60 Min)',dur:60},{label:'Design (90 Min)',dur:90}],o=>{
+    buildSingleSelect('styleOpts',[{label:'One Color',dur:60},{label:'Design',dur:90}],o=>{
       state.style=o.label; state.duration=o.dur; $('errStyle').textContent='';
     });
   } else {
@@ -779,6 +837,7 @@ function openBooking(svc){
   resetCalToToday();
   renderCalendar();
   ['err1','err2','err3','err4','errNail','errService','errStyle'].forEach(e=>$(e).textContent='');
+  $('acrylicNotice').classList.remove('show');
   document.querySelectorAll('#fName,#fSurname,#fEmail,#fPhone').forEach(i=>i.value='');
   goStep('contact');
   overlay.classList.add('show');
@@ -887,6 +946,9 @@ async function renderCalendar(){
 function sameDay(a,b){ return a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
 function dateStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 
+/* hours blocked by the admin for the selected date (Set of 'HH:MM' strings) */
+let blockedHoursForDay = new Set();
+
 /* ---- time slots with Supabase ---- */
 async function loadAndRenderSlots(){
   const box=$('slots');
@@ -915,9 +977,18 @@ async function loadAndRenderSlots(){
 
     if(error) throw error;
     dayBookings = data || [];
+
+    // hours the admin has manually blocked for this date
+    const { data: bh, error: bhError } = await sb
+      .from('blocked_hours')
+      .select('time')
+      .eq('date', dateStr(state.date));
+    if(bhError) throw bhError;
+    blockedHoursForDay = new Set((bh||[]).map(r=>r.time));
   } catch(e){
     console.error('Supabase error:', e);
     dayBookings = [];
+    blockedHoursForDay = new Set();
   }
 
   renderSlots(dayBookings);
@@ -938,9 +1009,14 @@ function renderSlots(bookings){
     btn.className='slot'; btn.textContent=label;
 
     const status = slotStatus(t, dur, bookings);
+    // a manually blocked hour behaves like a 30-min booking the slot can't overlap
+    const isBlockedHour = [...blockedHoursForDay].some(bt=>overlaps(t, dur, toMin(bt), 30));
 
     if(isToday && t <= nowMin){
       btn.disabled=true;
+    } else if(isBlockedHour){
+      // Treated as unavailable, same as a taken slot
+      btn.disabled=true; btn.title=t('tip_booked');
     } else if(status==='approved'){
       // Fully taken — disabled, looks unavailable
       btn.disabled=true; btn.title=t('tip_booked');
@@ -1080,6 +1156,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeBooking(); })
    ============================================================ */
 let adminFilter = 'pending';
 let adminBlocked = new Set();          // 'YYYY-MM-DD' strings
+let adminBlockedHours = new Set();     // 'HH:MM' strings blocked for today
 let blkCalDate = new Date();           // month shown in the block-days calendar
 blkCalDate.setDate(1);
 
@@ -1110,6 +1187,7 @@ function handleAdminLogin(){
     $('adminLogin').style.display='none';
     $('adminBookings').style.display='block';
     renderBlockCalendar();
+    renderBlockHours();
     loadAdminBookings();
   } else {
     $('adminErr').textContent='Incorrect password. Try again.';
@@ -1149,11 +1227,16 @@ function renderAdminBookings(bookings){
     const svcLabel = SERVICES[b.service]?.title || b.service;
     const badgeClass = b.status==='pending'?'badge-pending':b.status==='approved'?'badge-approved':'badge-rejected';
     const badgeText  = b.status==='pending'?'⏳ Pending':b.status==='approved'?'✓ Approved':'✗ Rejected';
-    const actions = b.status==='pending' ? `
+    const approveReject = b.status==='pending' ? `
       <div class="booking-actions">
         <button class="btn-approve" onclick="updateBooking('${b.id}','approved')">✓ Approve</button>
         <button class="btn-reject"  onclick="updateBooking('${b.id}','rejected')">✗ Reject</button>
       </div>` : '';
+    const freeSlotBtn = (b.status==='pending' || b.status==='approved') ? `
+      <div class="booking-actions">
+        <button class="btn-free" onclick="freeSlot('${b.id}')">🗑 Free Slot</button>
+      </div>` : '';
+    const actions = approveReject + freeSlotBtn;
     return `
       <div class="booking-card ${b.status==='pending'?'pending-card':''} glass" id="card-${b.id}">
         <div class="booking-card-top">
@@ -1198,6 +1281,22 @@ async function updateBooking(id, newStatus){
     console.error(e);
     if(card){ card.style.opacity='1'; card.style.pointerEvents=''; }
     alert('Could not update. Try again.');
+  }
+}
+
+async function freeSlot(id){
+  if(!confirm('Are you sure you want to remove this booking and free the slot?')) return;
+  const card = document.getElementById('card-'+id);
+  if(card){ card.style.opacity='0.5'; card.style.pointerEvents='none'; }
+
+  try {
+    const { error } = await sb.from('bookings').delete().eq('id', id);
+    if(error) throw error;
+    await loadAdminBookings();
+  } catch(e){
+    console.error(e);
+    if(card){ card.style.opacity='1'; card.style.pointerEvents=''; }
+    alert('Could not remove booking. Try again.');
   }
 }
 
@@ -1280,7 +1379,7 @@ async function renderBlockCalendar(){
     const ds=dateStr(date);
     const isBlocked=adminBlocked.has(ds);
     if(isBlocked){
-      btn.style.cssText='background:#FDECEA; border:1.5px solid #E88080; color:#C0392B;';
+      btn.classList.add('blocked');
     }
     btn.addEventListener('click',()=>toggleBlockedDay(ds, isBlocked));
     grid.appendChild(btn);
@@ -1301,6 +1400,50 @@ async function toggleBlockedDay(ds, isBlocked){
     alert('Could not update blocked day. Try again.');
   }
   await renderBlockCalendar();
+}
+
+/* ---- Block Hours Today (admin) ---- */
+async function fetchBlockedHoursAdmin(){
+  try {
+    const { data, error } = await sb.from('blocked_hours').select('time').eq('date', dateStr(new Date()));
+    if(error) throw error;
+    adminBlockedHours = new Set((data||[]).map(r=>r.time));
+  } catch(e){
+    console.error('Could not load blocked hours:', e);
+  }
+}
+
+async function renderBlockHours(){
+  $('blkHoursDate').textContent = fmtDate(new Date());
+  await fetchBlockedHoursAdmin();
+
+  const grid=$('blkHoursGrid'); grid.innerHTML='';
+  for(let t=OPEN_MIN; t<CLOSE_MIN; t+=30){
+    const label=fmtMin(t);
+    const btn=document.createElement('button');
+    btn.className='slot'; btn.textContent=label;
+    const isBlocked=adminBlockedHours.has(label);
+    if(isBlocked) btn.classList.add('blocked');
+    btn.addEventListener('click',()=>toggleBlockedHour(label, isBlocked));
+    grid.appendChild(btn);
+  }
+}
+
+async function toggleBlockedHour(time, isBlocked){
+  const ds=dateStr(new Date());
+  try {
+    if(isBlocked){
+      const { error } = await sb.from('blocked_hours').delete().eq('date', ds).eq('time', time);
+      if(error) throw error;
+    } else {
+      const { error } = await sb.from('blocked_hours').insert({ date: ds, time });
+      if(error) throw error;
+    }
+  } catch(e){
+    console.error('Could not toggle blocked hour:', e);
+    alert('Could not update blocked hour. Try again.');
+  }
+  await renderBlockHours();
 }
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
