@@ -297,6 +297,31 @@
   @media(prefers-reduced-motion:reduce){
     .blob,.glass::before{animation:none !important;}
   }
+
+  /* ---- Cancellation page ---- */
+  #cancelPage{display:none;}
+  #cancelPage.show{display:block;}
+  .cancel-wrap{position:relative;z-index:2;min-height:100vh;display:flex;align-items:center;
+    justify-content:center;padding:40px 20px;}
+  .cancel-card{width:100%;max-width:460px;padding:40px 34px;text-align:center;}
+  .cancel-flower{font-size:34px;margin-bottom:10px;}
+  .cancel-flower-lg{font-size:46px;margin-bottom:6px;}
+  .cancel-title{font-family:'Cormorant Garamond',serif;font-size:27px;font-weight:600;
+    color:var(--espresso);margin:0 0 10px;line-height:1.25;}
+  .cancel-sub{font-size:14.5px;color:var(--cocoa);line-height:1.55;margin:0 0 22px;}
+  .cancel-details{padding:18px 20px;margin:0 0 18px;text-align:left;border-radius:18px;}
+  .cancel-row{display:flex;justify-content:space-between;align-items:baseline;gap:14px;
+    padding:7px 0;font-size:14.5px;}
+  .cancel-row + .cancel-row{border-top:1px solid var(--glass-line);}
+  .cancel-row span{color:var(--cocoa);letter-spacing:.04em;text-transform:uppercase;font-size:11.5px;font-weight:600;}
+  .cancel-row strong{color:var(--espresso);font-weight:600;text-align:right;}
+  .cancel-note{font-size:12.5px;color:var(--cocoa);line-height:1.5;margin:0 0 22px;opacity:.9;}
+  .cancel-actions{display:flex;flex-direction:column;gap:12px;}
+  .cancel-actions .btn{width:100%;}
+  .btn-danger{color:#fff;background:linear-gradient(135deg,var(--rose-deep),#C98F86);
+    box-shadow:0 8px 20px rgba(201,143,134,.4);}
+  .btn-danger:hover{filter:brightness(1.05);}
+  .btn-danger:disabled{opacity:.6;cursor:default;filter:none;}
 </style>
 </head>
 <body>
@@ -521,6 +546,57 @@
     </div>
   </div>
 
+  <!-- CANCELLATION PAGE (shown only on ?cancel=TOKEN) -->
+  <div id="cancelPage">
+    <div class="cancel-wrap">
+      <div class="cancel-card glass">
+        <div class="cancel-flower">🌸</div>
+        <div id="cancelLoading" class="cancel-state">
+          <h3 class="cancel-title">Finding your appointment…</h3>
+          <p class="cancel-sub">One moment please.</p>
+        </div>
+
+        <div id="cancelConfirm" class="cancel-state" style="display:none;">
+          <h3 class="cancel-title">Cancel your appointment?</h3>
+          <p class="cancel-sub">Here are the details of the appointment you're about to cancel:</p>
+          <div class="cancel-details glass">
+            <div class="cancel-row"><span>Name</span><strong id="cxName"></strong></div>
+            <div class="cancel-row"><span>Service</span><strong id="cxService"></strong></div>
+            <div class="cancel-row"><span>Date</span><strong id="cxDate"></strong></div>
+            <div class="cancel-row"><span>Time</span><strong id="cxTime"></strong></div>
+          </div>
+          <p class="cancel-note">Please cancel at least 24 hours in advance. To reschedule, contact us directly instead.</p>
+          <div class="cancel-actions">
+            <button class="btn btn-danger" id="cxConfirmBtn">Yes, cancel my appointment</button>
+            <button class="btn btn-ghost" id="cxKeepBtn">Never mind, keep it</button>
+          </div>
+        </div>
+
+        <div id="cancelDone" class="cancel-state" style="display:none;">
+          <div class="cancel-flower-lg">🌸</div>
+          <h3 class="cancel-title">Your appointment has been cancelled.</h3>
+          <p class="cancel-sub">We hope to see you again soon.</p>
+        </div>
+
+        <div id="cancelInvalid" class="cancel-state" style="display:none;">
+          <h3 class="cancel-title">This link is no longer valid</h3>
+          <p class="cancel-sub">This cancellation link is no longer valid. Your appointment may have already been cancelled.</p>
+          <div class="cancel-actions">
+            <button class="btn btn-primary" onclick="location.href='https://studiomelisa.com'">Back to Studio Melisa</button>
+          </div>
+        </div>
+
+        <div id="cancelError" class="cancel-state" style="display:none;">
+          <h3 class="cancel-title">Something went wrong</h3>
+          <p class="cancel-sub">We couldn't cancel your appointment right now. Please try again, or contact us directly.</p>
+          <div class="cancel-actions">
+            <button class="btn btn-ghost" onclick="location.reload()">Try again</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 /* ============================================================
@@ -561,6 +637,25 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
      for insert with check (true);
    create policy "blocked_hours_delete" on public.blocked_hours
      for delete using (true);
+   ============================================================ */
+
+/* ============================================================
+   SUPABASE MIGRATION — run this manually in the SQL editor
+   for the booking cancellation system:
+
+   -- 1. Add a unique cancel token to every booking (auto-generated).
+   alter table public.bookings
+     add column if not exists cancel_token uuid default gen_random_uuid();
+
+   -- Backfill any existing rows that predate the column.
+   update public.bookings
+     set cancel_token = gen_random_uuid()
+     where cancel_token is null;
+
+   -- 2. Let anonymous visitors delete their own booking using the token.
+   --    The token is an unguessable uuid, so knowing it == owning the link.
+   create policy "bookings_cancel_by_token" on public.bookings
+     for delete using (cancel_token is not null);
    ============================================================ */
 
 /* ============================================================
@@ -801,6 +896,102 @@ if(isAdminPage){
   $('mainSite').style.display = 'none';
   $('adminPanel').classList.add('show');
   initAdmin();
+}
+
+/* ============================================================
+   CANCELLATION — check URL for ?cancel=TOKEN
+   ============================================================ */
+const cancelToken = new URLSearchParams(location.search).get('cancel');
+if(cancelToken){
+  $('mainSite').style.display = 'none';
+  initCancelPage(cancelToken);
+}
+
+function showCancelState(id){
+  ['cancelLoading','cancelConfirm','cancelDone','cancelInvalid','cancelError']
+    .forEach(s=>{ const el=$(s); if(el) el.style.display = (s===id) ? 'block' : 'none'; });
+}
+
+async function initCancelPage(token){
+  $('cancelPage').classList.add('show');
+  showCancelState('cancelLoading');
+
+  let booking;
+  try {
+    const { data, error } = await sb
+      .from('bookings').select('*').eq('cancel_token', token).maybeSingle();
+    if(error) throw error;
+    booking = data;
+  } catch(e){
+    console.error('Could not look up booking:', e);
+    showCancelState('cancelError');
+    return;
+  }
+
+  // No matching booking → already cancelled or invalid token
+  if(!booking){
+    showCancelState('cancelInvalid');
+    return;
+  }
+
+  // Friendly, formatted details
+  const svcLabel = SERVICES[booking.service]?.title || booking.service;
+  let prettyDate = booking.date;
+  try {
+    const [y,m,d] = booking.date.split('-').map(Number);
+    prettyDate = fmtDate(new Date(y, m-1, d));
+  } catch(_){ /* keep raw date */ }
+
+  $('cxName').textContent    = booking.name;
+  $('cxService').textContent = svcLabel;
+  $('cxDate').textContent    = prettyDate;
+  $('cxTime').textContent    = booking.time;
+  showCancelState('cancelConfirm');
+
+  $('cxKeepBtn').addEventListener('click', ()=>{
+    location.href = 'https://studiomelisa.com';
+  });
+
+  $('cxConfirmBtn').addEventListener('click', async ()=>{
+    const btn = $('cxConfirmBtn');
+    btn.disabled = true;
+    btn.textContent = 'Cancelling…';
+    try {
+      const { error } = await sb.from('bookings').delete().eq('cancel_token', token);
+      if(error) throw error;
+
+      // Let Melisa know — non-blocking, never block the success message
+      try { await sendCancellationNotice(booking, svcLabel, prettyDate); }
+      catch(notifyErr){ console.error('Studio notification failed:', notifyErr); }
+
+      showCancelState('cancelDone');
+    } catch(e){
+      console.error('Could not cancel booking:', e);
+      btn.disabled = false;
+      btn.textContent = 'Yes, cancel my appointment';
+      showCancelState('cancelError');
+    }
+  });
+}
+
+// Notify the studio (STUDIO_EMAIL) that a customer cancelled.
+async function sendCancellationNotice(booking, svcLabel, prettyDate){
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/send-booking-email`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${SUPABASE_ANON}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      booking: { ...booking, date: prettyDate },
+      newStatus: "cancelled",
+      services: SERVICES,
+    }),
+  });
+  if(!res.ok){
+    const txt = await res.text().catch(()=> '');
+    throw new Error('Notification failed '+res.status+': '+txt);
+  }
 }
 
 /* ============================================================
@@ -1113,8 +1304,13 @@ $('confirmBtn').addEventListener('click', async ()=>{
   };
 
   try {
-    const { error } = await sb.from('bookings').insert(bookingData);
+    // Insert and read the row back so we capture the DB-generated cancel_token.
+    // The token travels with the booking and is later used to build the
+    // cancellation link in the approval email (sent on approve).
+    const { data: saved, error } = await sb
+      .from('bookings').insert(bookingData).select().single();
     if(error) throw error;
+    if(saved) console.log('Booking saved with cancel_token:', saved.cancel_token);
   } catch(e){
     console.error('Could not save booking:', e);
     // Still open WhatsApp — don't block the user
@@ -1335,7 +1531,7 @@ async function sendBookingEmail(booking, newStatus){
       "Authorization": `Bearer ${SUPABASE_ANON}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ booking, newStatus, services: SERVICES }),
+    body: JSON.stringify({ booking, newStatus, services: SERVICES, cancelToken: booking.cancel_token }),
   });
   if(!res.ok){
     const txt = await res.text().catch(()=> '');

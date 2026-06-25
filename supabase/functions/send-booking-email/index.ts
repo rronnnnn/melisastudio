@@ -11,20 +11,49 @@ Deno.serve(async (req) => {
     });
   }
 
-  const { booking, newStatus, services } = await req.json();
+  const { booking, newStatus, services, cancelToken } = await req.json();
   const svcLabel = services[booking.service]?.title || booking.service;
 
-  let subject, html;
+  // Prefer the explicit cancelToken; fall back to the value on the booking row.
+  const token = cancelToken || booking.cancel_token || "";
+
+  let subject, html, to;
   if (newStatus === "approved") {
+    to = booking.email;
     subject = "Your booking is confirmed ✓ — Studio Melisa";
+
+    // Cancellation section — only included when we actually have a token.
+    const cancelUrl = `https://studiomelisa.com/?cancel=${token}`;
+    const cancelSection = token
+      ? `
+  <div style="margin-top:28px;padding:20px 22px;border-radius:14px;background:#F6EEE6;border:1px solid #EADBCE;">
+    <p style="margin:0 0 8px;font-weight:600;color:#5A4636;">Need to cancel? No problem.</p>
+    <p style="margin:0 0 16px;color:#7A5C45;">If your plans change, you can cancel your appointment by clicking the link below. Please cancel at least 24 hours in advance.</p>
+    <p style="margin:0 0 16px;">
+      <a href="${cancelUrl}" style="display:inline-block;padding:12px 22px;border-radius:12px;background:#9A7A60;color:#ffffff;text-decoration:none;font-weight:600;">Cancel my appointment →</a>
+    </p>
+    <p style="margin:0;font-size:12px;color:#9A7A60;">Note: this link is for cancellations only. If you'd like to reschedule, please contact us directly.</p>
+  </div>`
+      : "";
+
     html = `<div style="font-family:Arial,sans-serif;color:#5A4636;line-height:1.6;">
   <p>Hi ${booking.name},</p>
   <p>Wonderful news — your booking at <strong>Studio Melisa</strong> is confirmed! 🌸 We can't wait to see you.</p>
   <p><strong>Service:</strong> ${svcLabel}<br><strong>Date:</strong> ${booking.date}<br><strong>Time:</strong> ${booking.time}</p>
   <p>If anything changes, just reply to let us know. See you soon! 💕</p>
-  <p>— Studio Melisa</p>
+  <p>— Studio Melisa</p>${cancelSection}
+</div>`;
+  } else if (newStatus === "cancelled") {
+    // Notification to the studio that a customer cancelled their appointment.
+    to = STUDIO_EMAIL;
+    subject = "A booking has been cancelled — Studio Melisa";
+    html = `<div style="font-family:Arial,sans-serif;color:#5A4636;line-height:1.6;">
+  <p>A booking has been cancelled:</p>
+  <p><strong>${booking.name}</strong>, ${svcLabel}, ${booking.date} at ${booking.time}.</p>
+  <p>The slot is now free again.</p>
 </div>`;
   } else {
+    to = booking.email;
     subject = "About your booking — Studio Melisa";
     html = `<div style="font-family:Arial,sans-serif;color:#5A4636;line-height:1.6;">
   <p>Hi ${booking.name},</p>
@@ -40,7 +69,7 @@ Deno.serve(async (req) => {
       "Authorization": `Bearer ${RESEND_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ from: STUDIO_EMAIL, to: booking.email, subject, html }),
+    body: JSON.stringify({ from: STUDIO_EMAIL, to, subject, html }),
   });
 
   const data = await res.json();
