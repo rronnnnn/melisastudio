@@ -263,6 +263,7 @@
   #adminPanel.show{display:block;}
 
   .admin-header{text-align:center;margin-bottom:36px;}
+  .admin-logo{display:block;margin:0 auto 12px;width:120px;height:auto;}
   .admin-header .brand{font-size:clamp(42px,8vw,72px);}
   .admin-badge{display:inline-block;background:linear-gradient(135deg,var(--cocoa),var(--cocoa-deep));
     color:#fff;font-size:11px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;
@@ -308,6 +309,10 @@
   .admin-empty .ico{font-size:48px;margin-bottom:12px;}
   .admin-section-title{font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:600;
     margin:28px 0 12px;color:var(--cocoa-deep);}
+  .admin-datefilter{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+  .admin-datefilter label{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--cocoa);}
+  .admin-datefilter input[type=date]{padding:7px 12px;border-radius:14px;font-family:'Quicksand',sans-serif;
+    font-size:14px;color:var(--espresso);background:rgba(255,255,255,.55);border:1px solid var(--glass-line);outline:none;}
   .admin-filter{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
   .filter-btn{padding:7px 18px;border:none;border-radius:20px;font-family:'Quicksand',sans-serif;
     font-size:13px;font-weight:600;cursor:pointer;background:var(--glass-strong);color:var(--cocoa-deep);
@@ -408,6 +413,7 @@
   <!-- ADMIN PANEL -->
   <div id="adminPanel">
     <div class="admin-header">
+      <img class="admin-logo" src="MstudioLogo.png" alt="Studio Melisa">
       <div class="brand">Studio Melisa</div>
       <div class="admin-badge">✦ Admin</div>
     </div>
@@ -435,6 +441,11 @@
         <div style="font-size:12.5px;color:var(--cocoa);margin-top:10px;">Single tap a day to set its blocked hours. Double tap a day to block (or unblock) the whole day.</div>
       </div>
 
+      <div class="admin-datefilter">
+        <label for="adminDateInput">Date</label>
+        <input type="date" id="adminDateInput">
+        <button class="filter-btn" id="adminDateClear">Show all</button>
+      </div>
       <div class="admin-filter">
         <button class="filter-btn active" data-filter="pending">⏳ Waiting for approval</button>
         <button class="filter-btn" data-filter="approved">✓ Approved</button>
@@ -1704,6 +1715,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeBooking(); c
    ADMIN PANEL
    ============================================================ */
 let adminFilter = 'pending';
+let adminDateFilter = null;   // 'YYYY-MM-DD' or null for all dates
 let adminBlocked = new Set();          // 'YYYY-MM-DD' strings
 let adminBlockedHours = new Set();     // 'HH:MM' strings blocked for the selected date
 let blkHoursDate = new Date();         // date currently shown in the Block Hours panel
@@ -1721,13 +1733,23 @@ function initAdmin(){
     $('adminLogin').style.display='block';
     $('adminPass').value='';
   });
-  document.querySelectorAll('.filter-btn').forEach(btn=>{
+  document.querySelectorAll('.admin-filter .filter-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
       adminFilter = btn.dataset.filter;
-      document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.admin-filter .filter-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       loadAdminBookings();
     });
+  });
+  // date filter — works in combination with the status filter
+  $('adminDateInput').addEventListener('change', e=>{
+    adminDateFilter = e.target.value || null;   // 'YYYY-MM-DD' or null
+    loadAdminBookings();
+  });
+  $('adminDateClear').addEventListener('click', ()=>{
+    adminDateFilter = null;
+    $('adminDateInput').value = '';
+    loadAdminBookings();
   });
 }
 
@@ -1755,6 +1777,9 @@ async function loadAdminBookings(){
     if(adminFilter !== 'all'){
       query = query.eq('status', adminFilter);
     }
+    if(adminDateFilter){
+      query = query.eq('date', adminDateFilter);
+    }
     const { data, error } = await query;
     if(error) throw error;
     renderAdminBookings(data || []);
@@ -1767,8 +1792,9 @@ async function loadAdminBookings(){
 function renderAdminBookings(bookings){
   const list = $('bookingsList');
   if(bookings.length === 0){
-    const msg = adminFilter==='pending' ? 'No bookings waiting for approval.' :
+    let msg = adminFilter==='pending' ? 'No bookings waiting for approval.' :
                 adminFilter==='approved' ? 'No approved bookings.' : 'No bookings yet.';
+    if(adminDateFilter) msg = msg.replace(/\.$/, ` for ${adminDateFilter}.`);
     list.innerHTML=`<div class="admin-empty"><div class="ico">🌸</div><p>${msg}</p></div>`;
     return;
   }
