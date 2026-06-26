@@ -75,9 +75,9 @@
   header{text-align:center;margin-bottom:46px;}
   .brand{font-family:'Parisienne',cursive;font-size:clamp(58px,11vw,104px);line-height:.9;
     color:var(--cocoa-deep);text-shadow:0 2px 10px rgba(255,255,255,.6);}
-  .brand-logo{display:block;margin:0 auto;width:100%;max-width:280px;height:auto;
+  .brand-logo{display:block;margin:0 auto;width:100%;max-width:360px;height:auto;
     filter:drop-shadow(0 4px 14px rgba(122,92,69,.18));}
-  .tagline{font-family:'Cormorant Garamond',serif;font-size:clamp(17px,2.6vw,23px);
+  .tagline{font-family:'Cormorant Garamond',serif;font-size:12px;
     letter-spacing:.42em;text-transform:uppercase;color:var(--cocoa);margin-top:6px;font-weight:500;}
 
   .lang-switch{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:18px;}
@@ -241,6 +241,10 @@
   .btn-primary{color:#fff;background:linear-gradient(135deg,var(--cocoa),var(--cocoa-deep));box-shadow:0 8px 20px rgba(122,92,69,.38);}
   .btn-primary:hover{filter:brightness(1.06);}
   .btn-wa{background:linear-gradient(135deg,#3fb868,#1f9d52);box-shadow:0 8px 20px rgba(31,157,82,.4);color:#fff;}
+  /* secondary outline button — alternative booking via email */
+  .btn-email{width:100%;margin-top:12px;background:transparent;color:var(--cocoa-deep);
+    border:1.5px solid var(--cocoa);box-shadow:none;}
+  .btn-email:hover{background:rgba(154,122,96,.10);}
   .btn:disabled{opacity:.5;cursor:not-allowed;filter:none;}
 
   .summary{background:rgba(255,255,255,.45);border-radius:18px;padding:20px 22px;border:1px solid var(--glass-line);}
@@ -592,6 +596,7 @@
           <button class="btn btn-ghost" data-back data-i18n="btn_back">Back</button>
           <button class="btn btn-wa" id="confirmBtn" data-i18n="btn_send">Send to Studio Melisa</button>
         </div>
+        <button class="btn btn-email" id="emailBtn" data-i18n="btn_email">Book via Email</button>
       </div>
 
     </div>
@@ -800,7 +805,7 @@ const I18N = {
     h_date:"Zgjidhni një datë", h_time:"Zgjidhni një orë", h_review:"Rishikoni rezervimin tuaj",
     lbl_name:"Emri", lbl_surname:"Mbiemri", lbl_email:"Email", lbl_phone:"Numri i telefonit",
     btn_continue:"Vazhdo", btn_back:"Prapa", btn_review:"Rishiko",
-    btn_send:"Dërgo te Studio Melisa", btn_saving:"Duke ruajtur…", btn_close:"Mbyll",
+    btn_send:"Dërgo te Studio Melisa", btn_email:"Rezervo me Email", btn_saving:"Duke ruajtur…", btn_close:"Mbyll",
     legend:"Në pritje të miratimit — termini i rezervuar",
     opt_manicure:"Zgjidhni stilet e thonjve", opt_pedicure:"Zgjidhni stilet e thonjve",
     opt_eyebrows:"Zgjidhni shërbimet e vetullave", opt_lipblush:"Zgjidhni stilet e Lip Blush",
@@ -831,7 +836,7 @@ const I18N = {
     h_date:"Pick a date", h_time:"Choose a time", h_review:"Review your booking",
     lbl_name:"Name", lbl_surname:"Surname", lbl_email:"Email", lbl_phone:"Phone number",
     btn_continue:"Continue", btn_back:"Back", btn_review:"Review",
-    btn_send:"Send to Studio Melisa", btn_saving:"Saving…", btn_close:"Close",
+    btn_send:"Send to Studio Melisa", btn_email:"Book via Email", btn_saving:"Saving…", btn_close:"Close",
     legend:"Waiting for approval — slot reserved",
     opt_manicure:"Select your nail styles", opt_pedicure:"Select your nail styles",
     opt_eyebrows:"Select your brow services", opt_lipblush:"Select your lip blush styles",
@@ -862,7 +867,7 @@ const I18N = {
     h_date:"Изберете датум", h_time:"Изберете време", h_review:"Прегледајте ја вашата резервација",
     lbl_name:"Име", lbl_surname:"Презиме", lbl_email:"Е-пошта", lbl_phone:"Телефонски број",
     btn_continue:"Продолжи", btn_back:"Назад", btn_review:"Преглед",
-    btn_send:"Испрати до Studio Melisa", btn_saving:"Се зачувува…", btn_close:"Затвори",
+    btn_send:"Испрати до Studio Melisa", btn_email:"Резервирај преку Email", btn_saving:"Се зачувува…", btn_close:"Затвори",
     legend:"Се чека одобрување — терминот е резервиран",
     opt_manicure:"Изберете стилови за нокти", opt_pedicure:"Изберете стилови за нокти",
     opt_eyebrows:"Изберете услуги за веѓи", opt_lipblush:"Изберете стилови за Lip Blush",
@@ -1701,6 +1706,23 @@ Please confirm or let me know if you'd like to reschedule. Thank you! 💕`;
 
   // Confirmation popup
   document.getElementById('sentOverlay').classList.add('show');
+});
+
+/* ---- alternative: open the user's email client with the booking summary ---- */
+$('emailBtn').addEventListener('click', ()=>{
+  const isBrows = state.service==='eyebrows';
+  // mirror the review screen's time (eyebrows shows a start–end range)
+  const timeVal = isBrows ? fmtTimeRange(state.time, currentDuration()) : state.time;
+  const name = $('fName').value.trim()+' '+$('fSurname').value.trim();
+  const subject = 'Booking Request — Studio Melisa';
+  const body =
+    t('sum_service')+': '+svcTitle(state.service)+'\n'+
+    t('sum_name')+': '+name+'\n'+
+    t('sum_date')+': '+fmtDate(state.date)+'\n'+
+    t('sum_time')+': '+timeVal;
+  window.location.href = 'mailto:bookings@studiomelisa.com'
+    +'?subject='+encodeURIComponent(subject)
+    +'&body='+encodeURIComponent(body);
 });
 
 /* ---- booking-sent confirmation popup ---- */
