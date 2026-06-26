@@ -155,6 +155,7 @@
   /* admin block-hours panel (single-click a day) */
   .hours-modal{max-width:440px;}
   .hours-modal .admin-slots{grid-template-columns:repeat(4,1fr);max-height:50vh;overflow-y:auto;padding:2px;}
+  .hours-filter .filter-btn{padding:6px 13px;font-size:12px;}
 
   /* brief confirmation when a whole day is blocked/unblocked */
   .day-toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(12px);
@@ -610,6 +611,11 @@
     </div>
   </div>
 
+  <!--
+    blocked_hours.service migration (run once in Supabase):
+    ALTER TABLE blocked_hours ADD COLUMN service text DEFAULT NULL;
+    NULL = all services except Pedicure; a service value blocks only that service.
+  -->
   <!-- ADMIN — BLOCK HOURS PANEL (single-click a day) -->
   <div class="overlay" id="hoursOverlay">
     <div class="modal glass hours-modal">
@@ -619,6 +625,13 @@
           <div class="modal-sub" id="hoursPanelDate"></div>
         </div>
         <button class="close" id="hoursCloseBtn" aria-label="Close">&#10005;</button>
+      </div>
+      <div class="admin-filter hours-filter" id="hoursFilter" style="margin-top:18px;margin-bottom:0;">
+        <button class="filter-btn active" data-svc="">All Services</button>
+        <button class="filter-btn" data-svc="manicure">Manicure</button>
+        <button class="filter-btn" data-svc="eyebrows">Eyebrows</button>
+        <button class="filter-btn" data-svc="lipblush">Lip Blush</button>
+        <button class="filter-btn" data-svc="pedicure">Pedicure</button>
       </div>
       <div class="admin-slots" id="hoursPanelGrid" style="margin-top:18px;"></div>
       <div style="font-size:12.5px;color:var(--cocoa);margin-top:14px;">Tap a time to block or unblock it for this date. Blocked times can't be booked.</div>
@@ -719,6 +732,24 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
      for insert with check (true);
    create policy "blocked_hours_delete" on public.blocked_hours
      for delete using (true);
+   ============================================================ */
+
+/* ============================================================
+   SUPABASE MIGRATION — run this manually in the SQL editor
+   for per-service blocked hours:
+
+   -- service column. NULL = all services EXCEPT Pedicure (separate worker);
+   -- a service id ('manicure' | 'eyebrows' | 'lipblush' | 'pedicure')
+   -- blocks only that service.
+   alter table public.blocked_hours add column service text default null;
+
+   -- The old unique(date,time) prevents blocking the same slot for two
+   -- different services, so replace it with a per-service unique index.
+   -- COALESCE keeps NULL ("All Services") rows unique too, since Postgres
+   -- would otherwise treat each NULL as distinct.
+   alter table public.blocked_hours drop constraint if exists blocked_hours_date_time_key;
+   create unique index if not exists blocked_hours_date_time_service_key
+     on public.blocked_hours (date, time, coalesce(service, ''));
    ============================================================ */
 
 /* ============================================================
@@ -1470,11 +1501,21 @@ async function loadAndRenderSlots(){
     if(error) throw error;
     dayBookings = data || [];
 
-    // hours the admin has manually blocked for this date
-    const { data: bh, error: bhError } = await sb
+    // hours the admin has manually blocked for this date.
+    // Pedicure is a separate worker: it only honours Pedicure-specific blocks
+    // and is never affected by NULL ("All Services") or other-service blocks.
+    // Every other service honours its own service-specific blocks plus the
+    // NULL ("All Services") blocks.
+    let bhQuery = sb
       .from('blocked_hours')
       .select('time')
       .eq('date', dateStr(state.date));
+    if(state.service === 'pedicure'){
+      bhQuery = bhQuery.eq('service', 'pedicure');
+    } else {
+      bhQuery = bhQuery.or('service.is.null,service.eq.'+state.service);
+    }
+    const { data: bh, error: bhError } = await bhQuery;
     if(bhError) throw bhError;
     blockedHoursForDay = new Set((bh||[]).map(r=>r.time));
   } catch(e){
@@ -1935,11 +1976,19 @@ function showDayToast(msg){
 }
 
 /* ---- Block Hours panel (single-click a day) ---- */
+// Which service the panel is currently filtering by.
+// '' (empty) = All Services, stored in blocked_hours as service = NULL
+// (blocks every service except Pedicure). A service id blocks only that service.
+let hoursFilterService = '';
+
 async function fetchBlockedHoursAdmin(){
   try {
-    const { data, error } = await sb.from('blocked_hours').select('time').eq('date', dateStr(blkHoursDate));
+    const { data, error } = await sb.from('blocked_hours').select('time, service').eq('date', dateStr(blkHoursDate));
     if(error) throw error;
-    adminBlockedHours = new Set((data||[]).map(r=>r.time));
+    // Only show slots blocked for the currently selected filter.
+    adminBlockedHours = new Set((data||[])
+      .filter(r => hoursFilterService === '' ? r.service === null : r.service === hoursFilterService)
+      .map(r=>r.time));
   } catch(e){
     console.error('Could not load blocked hours:', e);
   }
@@ -1948,6 +1997,11 @@ async function fetchBlockedHoursAdmin(){
 // Open the working-hours panel for a given date.
 function openHoursPanel(date){
   blkHoursDate = date;
+  // always open on the "All Services" filter
+  hoursFilterService = '';
+  $('hoursFilter').querySelectorAll('.filter-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.svc === '');
+  });
   $('hoursOverlay').classList.add('show');
   document.body.style.overflow='hidden';
   renderBlockHours();
@@ -1976,12 +2030,16 @@ async function renderBlockHours(){
 
 async function toggleBlockedHour(time, isBlocked){
   const ds=dateStr(blkHoursDate);
+  // '' (All Services) is stored as NULL; a specific filter stores its service id.
+  const svc = hoursFilterService === '' ? null : hoursFilterService;
   try {
     if(isBlocked){
-      const { error } = await sb.from('blocked_hours').delete().eq('date', ds).eq('time', time);
+      let del = sb.from('blocked_hours').delete().eq('date', ds).eq('time', time);
+      del = svc === null ? del.is('service', null) : del.eq('service', svc);
+      const { error } = await del;
       if(error) throw error;
     } else {
-      const { error } = await sb.from('blocked_hours').insert({ date: ds, time });
+      const { error } = await sb.from('blocked_hours').insert({ date: ds, time, service: svc });
       if(error) throw error;
     }
   } catch(e){
@@ -1994,6 +2052,16 @@ async function toggleBlockedHour(time, isBlocked){
 // Close the hours panel via the close button or backdrop click.
 $('hoursCloseBtn').addEventListener('click', closeHoursPanel);
 $('hoursOverlay').addEventListener('click', e=>{ if(e.target===$('hoursOverlay')) closeHoursPanel(); });
+
+// Service filter tabs inside the hours panel.
+$('hoursFilter').querySelectorAll('.filter-btn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    hoursFilterService = btn.dataset.svc;
+    $('hoursFilter').querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderBlockHours();
+  });
+});
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>
