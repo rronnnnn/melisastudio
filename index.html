@@ -151,6 +151,17 @@
   .day:disabled{opacity:.28;cursor:not-allowed;}
   /* blocked day (admin) = distinct red so Melisa can clearly see which days she has blocked */
   .day.blocked{background:#FDECEA;color:#C0392B;opacity:1;}
+
+  /* admin block-hours panel (single-click a day) */
+  .hours-modal{max-width:440px;}
+  .hours-modal .admin-slots{grid-template-columns:repeat(4,1fr);max-height:50vh;overflow-y:auto;padding:2px;}
+
+  /* brief confirmation when a whole day is blocked/unblocked */
+  .day-toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) translateY(12px);
+    z-index:60;padding:13px 22px;border-radius:16px;font-family:'Quicksand',sans-serif;font-size:14px;
+    font-weight:600;color:var(--espresso);background:var(--glass-strong);border:1px solid var(--glass-line);
+    box-shadow:var(--shadow);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;}
+  .day-toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   .day.sel{background:linear-gradient(135deg,var(--cocoa),var(--cocoa-deep));color:#fff;box-shadow:0 5px 14px rgba(122,92,69,.4);}
 
   .slots{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;max-height:300px;overflow-y:auto;padding:4px 2px;}
@@ -420,17 +431,7 @@
           <button id="blkNextM" aria-label="Next month">&#8250;</button>
         </div>
         <div class="cal-grid" id="blkGrid"></div>
-        <div style="font-size:12.5px;color:var(--cocoa);margin-top:10px;">Tap a day to block or unblock it. Blocked days can't be booked.</div>
-      </div>
-
-      <!-- Block Hours Today -->
-      <div class="admin-section-title">Block Hours Today</div>
-      <div class="glass" style="padding:20px 22px;margin-bottom:24px;">
-        <label for="blkHoursDateInput" style="display:block;font-size:13px;font-weight:600;color:var(--cocoa-deep);margin-bottom:8px;">Date</label>
-        <input type="date" id="blkHoursDateInput" style="font-size:14px;padding:8px 10px;border:1px solid var(--line,#e3d8cf);border-radius:8px;background:#fff;color:var(--cocoa-deep);margin-bottom:14px;">
-        <div id="blkHoursDate" style="font-size:13px;font-weight:600;color:var(--cocoa-deep);margin-bottom:14px;"></div>
-        <div class="admin-slots" id="blkHoursGrid"></div>
-        <div style="font-size:12.5px;color:var(--cocoa);margin-top:12px;">Tap a time to block or unblock it for the selected date. Blocked times can't be booked.</div>
+        <div style="font-size:12.5px;color:var(--cocoa);margin-top:10px;">Single tap a day to set its blocked hours. Double tap a day to block (or unblock) the whole day.</div>
       </div>
 
       <div class="admin-filter">
@@ -608,6 +609,24 @@
       </div>
     </div>
   </div>
+
+  <!-- ADMIN — BLOCK HOURS PANEL (single-click a day) -->
+  <div class="overlay" id="hoursOverlay">
+    <div class="modal glass hours-modal">
+      <div class="modal-top">
+        <div>
+          <div class="modal-title">Working hours</div>
+          <div class="modal-sub" id="hoursPanelDate"></div>
+        </div>
+        <button class="close" id="hoursCloseBtn" aria-label="Close">&#10005;</button>
+      </div>
+      <div class="admin-slots" id="hoursPanelGrid" style="margin-top:18px;"></div>
+      <div style="font-size:12.5px;color:var(--cocoa);margin-top:14px;">Tap a time to block or unblock it for this date. Blocked times can't be booked.</div>
+    </div>
+  </div>
+
+  <!-- brief confirmation toast for whole-day block/unblock -->
+  <div class="day-toast" id="dayToast"></div>
 
   <!-- CANCELLATION PAGE (shown only on ?cancel=TOKEN) -->
   <div id="cancelPage">
@@ -1638,7 +1657,7 @@ function closeSent(){ sentOverlay.classList.remove('show'); }
 document.getElementById('sentCloseBtn').addEventListener('click',closeSent);
 sentOverlay.addEventListener('click',e=>{ if(e.target===sentOverlay) closeSent(); });
 
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeBooking(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeBooking(); closeHoursPanel(); } });
 
 /* ============================================================
    ADMIN PANEL
@@ -1646,7 +1665,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeBooking(); })
 let adminFilter = 'pending';
 let adminBlocked = new Set();          // 'YYYY-MM-DD' strings
 let adminBlockedHours = new Set();     // 'HH:MM' strings blocked for the selected date
-let blkHoursDate = new Date();         // date currently shown in the Block Hours section
+let blkHoursDate = new Date();         // date currently shown in the Block Hours panel
 const BLK_CLOSE_MIN = 22*60;           // Block Hours grid runs 08:00–22:00 (last slot 21:30)
 let blkCalDate = new Date();           // month shown in the block-days calendar
 blkCalDate.setDate(1);
@@ -1678,7 +1697,6 @@ function handleAdminLogin(){
     $('adminLogin').style.display='none';
     $('adminBookings').style.display='block';
     renderBlockCalendar();
-    renderBlockHours();
     loadAdminBookings();
   } else {
     $('adminErr').textContent='Incorrect password. Try again.';
@@ -1868,11 +1886,23 @@ async function renderBlockCalendar(){
     const btn=document.createElement('button'); btn.className='day'; btn.textContent=d;
     const date=new Date(y,m,d);
     const ds=dateStr(date);
+    if(date<today){ btn.disabled=true; }   // past days: not clickable (single or double)
     const isBlocked=adminBlocked.has(ds);
     if(isBlocked){
       btn.classList.add('blocked');
     }
-    btn.addEventListener('click',()=>toggleBlockedDay(ds, isBlocked));
+    // single click → open the working-hours panel for that day;
+    // double click → toggle the whole day as blocked. A short timer
+    // distinguishes the two so a double click doesn't also open the panel.
+    let clickTimer=null;
+    btn.addEventListener('click',()=>{
+      if(clickTimer) return;             // second click of a dbl — let dblclick handle it
+      clickTimer=setTimeout(()=>{ clickTimer=null; openHoursPanel(date); }, 250);
+    });
+    btn.addEventListener('dblclick',()=>{
+      if(clickTimer){ clearTimeout(clickTimer); clickTimer=null; }
+      toggleBlockedDay(ds, isBlocked);
+    });
     grid.appendChild(btn);
   }
 }
@@ -1886,6 +1916,7 @@ async function toggleBlockedDay(ds, isBlocked){
       const { error } = await sb.from('blocked_days').insert({ date: ds });
       if(error) throw error;
     }
+    showDayToast(isBlocked ? 'Day unblocked ✓' : 'Day blocked ✓');
   } catch(e){
     console.error('Could not toggle blocked day:', e);
     alert('Could not update blocked day. Try again.');
@@ -1893,7 +1924,17 @@ async function toggleBlockedDay(ds, isBlocked){
   await renderBlockCalendar();
 }
 
-/* ---- Block Hours Today (admin) ---- */
+let dayToastTimer=null;
+function showDayToast(msg){
+  const el=$('dayToast');
+  if(!el) return;
+  el.textContent=msg;
+  el.classList.add('show');
+  if(dayToastTimer) clearTimeout(dayToastTimer);
+  dayToastTimer=setTimeout(()=>el.classList.remove('show'), 1800);
+}
+
+/* ---- Block Hours panel (single-click a day) ---- */
 async function fetchBlockedHoursAdmin(){
   try {
     const { data, error } = await sb.from('blocked_hours').select('time').eq('date', dateStr(blkHoursDate));
@@ -1904,14 +1945,25 @@ async function fetchBlockedHoursAdmin(){
   }
 }
 
+// Open the working-hours panel for a given date.
+function openHoursPanel(date){
+  blkHoursDate = date;
+  $('hoursOverlay').classList.add('show');
+  document.body.style.overflow='hidden';
+  renderBlockHours();
+}
+
+function closeHoursPanel(){
+  $('hoursOverlay').classList.remove('show');
+  document.body.style.overflow='';
+}
+
 async function renderBlockHours(){
-  const input = $('blkHoursDateInput');
-  if(input && !input.value) input.value = dateStr(blkHoursDate);
-  $('blkHoursDate').textContent = fmtDate(blkHoursDate);
+  $('hoursPanelDate').textContent = fmtDate(blkHoursDate);
   await fetchBlockedHoursAdmin();
 
-  const grid=$('blkHoursGrid'); grid.innerHTML='';
-  for(let min=OPEN_MIN; min<BLK_CLOSE_MIN; min+=30){
+  const grid=$('hoursPanelGrid'); grid.innerHTML='';
+  for(let min=OPEN_MIN; min<=BLK_CLOSE_MIN; min+=30){   // 08:00–22:00, 30-min intervals
     const label=fmtMin(min);
     const btn=document.createElement('button');
     btn.className='slot'; btn.textContent=label;
@@ -1939,14 +1991,9 @@ async function toggleBlockedHour(time, isBlocked){
   await renderBlockHours();
 }
 
-// Reload the Block Hours grid when the admin picks a different date.
-$('blkHoursDateInput').addEventListener('change', e=>{
-  const v = e.target.value;          // 'YYYY-MM-DD'
-  if(!v) return;
-  const [y,m,d] = v.split('-').map(Number);
-  blkHoursDate = new Date(y, m-1, d); // local-time date, avoids UTC day shift
-  renderBlockHours();
-});
+// Close the hours panel via the close button or backdrop click.
+$('hoursCloseBtn').addEventListener('click', closeHoursPanel);
+$('hoursOverlay').addEventListener('click', e=>{ if(e.target===$('hoursOverlay')) closeHoursPanel(); });
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>
