@@ -403,9 +403,11 @@
       <!-- Block Hours Today -->
       <div class="admin-section-title">Block Hours Today</div>
       <div class="glass" style="padding:20px 22px;margin-bottom:24px;">
+        <label for="blkHoursDateInput" style="display:block;font-size:13px;font-weight:600;color:var(--cocoa-deep);margin-bottom:8px;">Date</label>
+        <input type="date" id="blkHoursDateInput" style="font-size:14px;padding:8px 10px;border:1px solid var(--line,#e3d8cf);border-radius:8px;background:#fff;color:var(--cocoa-deep);margin-bottom:14px;">
         <div id="blkHoursDate" style="font-size:13px;font-weight:600;color:var(--cocoa-deep);margin-bottom:14px;"></div>
         <div class="admin-slots" id="blkHoursGrid"></div>
-        <div style="font-size:12.5px;color:var(--cocoa);margin-top:12px;">Tap a time to block or unblock it for today. Blocked times can't be booked.</div>
+        <div style="font-size:12.5px;color:var(--cocoa);margin-top:12px;">Tap a time to block or unblock it for the selected date. Blocked times can't be booked.</div>
       </div>
 
       <div class="admin-filter">
@@ -455,7 +457,7 @@
         <div class="err" id="errNail"></div>
         <div class="nav">
           <button class="btn btn-ghost" data-back data-i18n="btn_back">Back</button>
-          <button class="btn btn-primary" data-next data-i18n="btn_continue">Continue</button>
+          <button class="btn btn-primary" id="nailContinue" data-next data-i18n="btn_continue">Continue</button>
         </div>
       </div>
 
@@ -475,6 +477,28 @@
         <h4 data-i18n="h_style">Choose your style</h4>
         <div class="opts" id="styleOpts"></div>
         <div class="err" id="errStyle"></div>
+        <div class="nav">
+          <button class="btn btn-ghost" data-back data-i18n="btn_back">Back</button>
+          <button class="btn btn-primary" data-next data-i18n="btn_continue">Continue</button>
+        </div>
+      </div>
+
+      <!-- EYEBROWS: what do you need? (sets duration) -->
+      <div class="step" data-stepkey="browservice">
+        <h4 data-i18n="h_browservice">What do you need?</h4>
+        <div class="opts" id="browServiceOpts"></div>
+        <div class="err" id="errBrowService"></div>
+        <div class="nav">
+          <button class="btn btn-ghost" data-back data-i18n="btn_back">Back</button>
+          <button class="btn btn-primary" data-next data-i18n="btn_continue">Continue</button>
+        </div>
+      </div>
+
+      <!-- EYEBROWS: coloring? (informational, no duration impact) -->
+      <div class="step" data-stepkey="browcolor">
+        <h4 data-i18n="h_browcolor">Would you like coloring?</h4>
+        <div class="opts" id="browColorOpts"></div>
+        <div class="err" id="errBrowColor"></div>
         <div class="nav">
           <button class="btn btn-ghost" data-back data-i18n="btn_back">Back</button>
           <button class="btn btn-primary" data-next data-i18n="btn_continue">Continue</button>
@@ -692,7 +716,10 @@ const I18N = {
     sum_service:"Shërbimi", sum_name:"Emri", sum_phone:"Telefoni", sum_email:"Email",
     sum_date:"Data", sum_time:"Ora", sum_nailtype:"Lloji i thonjve", sum_servicetype:"Lloji i shërbimit",
     sum_style:"Stili", sum_duration:"Kohëzgjatja", unit_min:"min",
-    sum_services:"Shërbimet", sum_styles:"Stilet"
+    sum_services:"Shërbimet", sum_styles:"Stilet",
+    h_browservice:"Çfarë ju nevojitet?", h_browcolor:"A dëshironi ngjyrosje?",
+    brow_cleaning:"Pastrim", brow_lifting:"Lifting",
+    ans_yes:"Po", ans_no:"Jo", sum_coloring:"Ngjyrosje"
   },
   en: {
     tagline:"Nails · Brows · Lip Blush",
@@ -720,7 +747,10 @@ const I18N = {
     sum_service:"Service", sum_name:"Name", sum_phone:"Phone", sum_email:"Email",
     sum_date:"Date", sum_time:"Time", sum_nailtype:"Nail type", sum_servicetype:"Service type",
     sum_style:"Style", sum_duration:"Duration", unit_min:"min",
-    sum_services:"Services", sum_styles:"Styles"
+    sum_services:"Services", sum_styles:"Styles",
+    h_browservice:"What do you need?", h_browcolor:"Would you like coloring?",
+    brow_cleaning:"Cleaning", brow_lifting:"Lifting",
+    ans_yes:"Yes", ans_no:"No", sum_coloring:"Coloring"
   },
   mk: {
     tagline:"Нокти · Веѓи · Lip Blush",
@@ -748,7 +778,10 @@ const I18N = {
     sum_service:"Услуга", sum_name:"Име", sum_phone:"Телефон", sum_email:"Е-пошта",
     sum_date:"Датум", sum_time:"Време", sum_nailtype:"Тип на нокти", sum_servicetype:"Тип на услуга",
     sum_style:"Стил", sum_duration:"Времетраење", unit_min:"мин",
-    sum_services:"Услуги", sum_styles:"Стилови"
+    sum_services:"Услуги", sum_styles:"Стилови",
+    h_browservice:"Што ви треба?", h_browcolor:"Дали сакате боење?",
+    brow_cleaning:"Чистење", brow_lifting:"Лифтинг",
+    ans_yes:"Да", ans_no:"Не", sum_coloring:"Боење"
   }
 };
 
@@ -802,7 +835,7 @@ const SHARED_WORKER_SERVICES = ['manicure', 'eyebrows', 'lipblush'];
 const SERVICES = {
   manicure: { title:"Manicure", interval:30, optTitle:"Select your nail styles",
     options:["French Tip","Natural","Design","Tips"] },
-  pedicure: { title:"Pedicure", interval:30, optTitle:"Select your nail styles",
+  pedicure: { title:"Pedicure", interval:60, optTitle:"Select your nail styles",
     options:["French Tip","Natural","Design","Tips"] },
   eyebrows: { title:"Eyebrows", interval:15, optTitle:"Select your brow services",
     options:["Eyebrow Lamination","Shaping","Cleaning"] },
@@ -823,6 +856,8 @@ const GRID = 15; // slot generation interval, minutes
 
 function toMin(hhmm){ const [h,m]=hhmm.split(':').map(Number); return h*60+m; }
 function fmtMin(t){ return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0'); }
+// "15:00" + 45 → "15:00 - 15:45"
+function fmtTimeRange(startHHMM, dur){ return startHHMM+' - '+fmtMin(toMin(startHHMM)+dur); }
 
 // new booking window [S, S+D) vs existing window [Bs, Bs+Bd)
 function overlaps(S, D, Bs, Bd){ return Bs < S + D && Bs + Bd > S; }
@@ -851,7 +886,10 @@ const MULTISTEP_SERVICES = ['manicure','pedicure'];
 function getSequence(){
   if(MULTISTEP_SERVICES.includes(state.service)){
     const seq=['contact','nailtype','servicetype','style','date','time','review'];
-    return state.nailType==='Natural' ? seq.filter(k=>k!=='servicetype') : seq;
+    return seq;
+  }
+  if(state.service==='eyebrows'){
+    return ['contact','browservice','browcolor','date','time','review'];
   }
   return ['contact','date','time','options','review'];
 }
@@ -1013,23 +1051,41 @@ function openBooking(svc){
   if(MULTISTEP_SERVICES.includes(svc)){
     buildSingleSelect('nailOpts',[{label:'Natural'},{label:'Gel'},{label:'Acrylic'}],o=>{
       state.nailType=o.label;
-      if(o.label==='Natural') state.serviceType=null;
-      $('acrylicNotice').classList.toggle('show', o.label==='Acrylic');
+      const isAcrylic = o.label==='Acrylic';
+      $('acrylicNotice').classList.toggle('show', isAcrylic);
+      $('nailContinue').disabled = isAcrylic; // block proceeding while Acrylic is selected
       $('errNail').textContent='';
     });
     buildSingleSelect('serviceOpts',[{label:'Refill'},{label:'New Set (artificial tips)'}],o=>{
       state.serviceType=o.label; $('errService').textContent='';
     });
-    buildSingleSelect('styleOpts',[{label:'One Color',dur:60},{label:'Design',dur:90}],o=>{
+    // Pedicure: both styles are 1hr. Manicure: One Color 1hr, Design 1.5hr.
+    const styleOpts = svc==='pedicure'
+      ? [{label:'One Color',dur:60},{label:'Design',dur:60}]
+      : [{label:'One Color',dur:60},{label:'Design',dur:90}];
+    buildSingleSelect('styleOpts',styleOpts,o=>{
       state.style=o.label; state.duration=o.dur; $('errStyle').textContent='';
     });
+  } else if(svc==='eyebrows'){
+    // "What do you need?" sets the duration (Cleaning 15min, Lifting 45min).
+    // Stored in service_type (reusing the existing column).
+    buildSingleSelect('browServiceOpts',[
+      {label:t('brow_cleaning'),dur:15},
+      {label:t('brow_lifting'),dur:45}
+    ],o=>{ state.serviceType=o.label; state.duration=o.dur; $('errBrowService').textContent=''; });
+    // "Would you like coloring?" is informational only — stored in nail_type (reused column).
+    buildSingleSelect('browColorOpts',[
+      {label:t('ans_yes')},
+      {label:t('ans_no')}
+    ],o=>{ state.nailType=o.label; $('errBrowColor').textContent=''; });
   } else {
     buildOptions();
   }
   resetCalToToday();
   renderCalendar();
-  ['err1','err2','err3','err4','errNail','errService','errStyle'].forEach(e=>$(e).textContent='');
+  ['err1','err2','err3','err4','errNail','errService','errStyle','errBrowService','errBrowColor'].forEach(e=>$(e).textContent='');
   $('acrylicNotice').classList.remove('show');
+  $('nailContinue').disabled = false;
   document.querySelectorAll('#fName,#fSurname,#fEmail,#fPhone').forEach(i=>i.value='');
   goStep('contact');
   overlay.classList.add('show');
@@ -1059,6 +1115,8 @@ function validateStep(key){
     case 'nailtype': if(!state.nailType){ $('errNail').textContent=t('err_choose'); return false; } return true;
     case 'servicetype': if(!state.serviceType){ $('errService').textContent=t('err_choose'); return false; } return true;
     case 'style': if(!state.style){ $('errStyle').textContent=t('err_choose'); return false; } return true;
+    case 'browservice': if(!state.serviceType){ $('errBrowService').textContent=t('err_choose'); return false; } return true;
+    case 'browcolor': if(!state.nailType){ $('errBrowColor').textContent=t('err_choose'); return false; } return true;
     case 'date': if(!state.date){ $('err2').textContent=t('err_date'); return false; } return true;
     case 'time': if(!state.time){ $('err3').textContent=t('err_time'); return false; } return true;
     case 'options': if(state.opts.length===0){ $('err4').textContent=t('err_option'); return false; } return true;
@@ -1252,21 +1310,28 @@ function fmtDate(d){ return d.toLocaleDateString('en-GB',{weekday:'long',day:'nu
 function renderSummary(){
   const s=SERVICES[state.service];
   const isMulti=MULTISTEP_SERVICES.includes(state.service);
+  const isBrows=state.service==='eyebrows';
+  // Eyebrows shows a start–end range (e.g. "15:00 - 15:45"); other flows keep the start time.
+  const timeVal = isBrows ? fmtTimeRange(state.time, currentDuration()) : state.time;
   const rows=[
     [t('sum_service'), svcTitle(state.service)],
     [t('sum_name'), $('fName').value.trim()+' '+$('fSurname').value.trim()],
     [t('sum_phone'), $('fPhone').value.trim()],
     [t('sum_email'), $('fEmail').value.trim()],
     [t('sum_date'), fmtDate(state.date)],
-    [t('sum_time'), state.time]
+    [t('sum_time'), timeVal]
   ];
   if(isMulti){
     rows.push([t('sum_nailtype'), state.nailType]);
     if(state.serviceType) rows.push([t('sum_servicetype'), state.serviceType]);
     rows.push([t('sum_style'), state.style]);
     rows.push([t('sum_duration'), currentDuration()+' '+t('unit_min')]);
+  } else if(isBrows){
+    rows.push([t('sum_servicetype'), state.serviceType]);
+    rows.push([t('sum_coloring'), state.nailType]);
+    rows.push([t('sum_duration'), currentDuration()+' '+t('unit_min')]);
   } else {
-    rows.push([state.service==='eyebrows'?t('sum_services'):t('sum_styles'), state.opts.join(', ')]);
+    rows.push([t('sum_styles'), state.opts.join(', ')]);
   }
   $('summary').innerHTML = rows.map(r=>
     '<div class="sum-row"><span class="k">'+r[0]+'</span><span class="v">'+r[1]+'</span></div>').join('');
@@ -1287,6 +1352,9 @@ $('confirmBtn').addEventListener('click', async ()=>{
     if(state.serviceType) parts.push(state.serviceType);
     parts.push(state.style);
     optionsText = parts.join(' · ');
+  } else if(state.service==='eyebrows'){
+    // brow service + coloring answer, e.g. "Lifting · Coloring: Yes"
+    optionsText = state.serviceType+' · '+t('sum_coloring')+': '+state.nailType;
   } else {
     optionsText = state.opts.join(', ');
   }
@@ -1299,8 +1367,9 @@ $('confirmBtn').addEventListener('click', async ()=>{
     email:     $('fEmail').value.trim(),
     options:   optionsText,
     status:    'pending',
-    nail_type: isMulti ? state.nailType : null,
-    service_type: isMulti ? state.serviceType : null,
+    // Eyebrows reuses these columns: service_type = brow service, nail_type = coloring answer.
+    nail_type: (isMulti || state.service==='eyebrows') ? state.nailType : null,
+    service_type: (isMulti || state.service==='eyebrows') ? state.serviceType : null,
     duration_minutes: duration
   };
 
@@ -1353,7 +1422,9 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeBooking(); })
    ============================================================ */
 let adminFilter = 'pending';
 let adminBlocked = new Set();          // 'YYYY-MM-DD' strings
-let adminBlockedHours = new Set();     // 'HH:MM' strings blocked for today
+let adminBlockedHours = new Set();     // 'HH:MM' strings blocked for the selected date
+let blkHoursDate = new Date();         // date currently shown in the Block Hours section
+const BLK_CLOSE_MIN = 22*60;           // Block Hours grid runs 08:00–22:00 (last slot 21:30)
 let blkCalDate = new Date();           // month shown in the block-days calendar
 blkCalDate.setDate(1);
 
@@ -1602,7 +1673,7 @@ async function toggleBlockedDay(ds, isBlocked){
 /* ---- Block Hours Today (admin) ---- */
 async function fetchBlockedHoursAdmin(){
   try {
-    const { data, error } = await sb.from('blocked_hours').select('time').eq('date', dateStr(new Date()));
+    const { data, error } = await sb.from('blocked_hours').select('time').eq('date', dateStr(blkHoursDate));
     if(error) throw error;
     adminBlockedHours = new Set((data||[]).map(r=>r.time));
   } catch(e){
@@ -1611,11 +1682,13 @@ async function fetchBlockedHoursAdmin(){
 }
 
 async function renderBlockHours(){
-  $('blkHoursDate').textContent = fmtDate(new Date());
+  const input = $('blkHoursDateInput');
+  if(input && !input.value) input.value = dateStr(blkHoursDate);
+  $('blkHoursDate').textContent = fmtDate(blkHoursDate);
   await fetchBlockedHoursAdmin();
 
   const grid=$('blkHoursGrid'); grid.innerHTML='';
-  for(let min=OPEN_MIN; min<CLOSE_MIN; min+=30){
+  for(let min=OPEN_MIN; min<BLK_CLOSE_MIN; min+=30){
     const label=fmtMin(min);
     const btn=document.createElement('button');
     btn.className='slot'; btn.textContent=label;
@@ -1627,7 +1700,7 @@ async function renderBlockHours(){
 }
 
 async function toggleBlockedHour(time, isBlocked){
-  const ds=dateStr(new Date());
+  const ds=dateStr(blkHoursDate);
   try {
     if(isBlocked){
       const { error } = await sb.from('blocked_hours').delete().eq('date', ds).eq('time', time);
@@ -1642,6 +1715,15 @@ async function toggleBlockedHour(time, isBlocked){
   }
   await renderBlockHours();
 }
+
+// Reload the Block Hours grid when the admin picks a different date.
+$('blkHoursDateInput').addEventListener('change', e=>{
+  const v = e.target.value;          // 'YYYY-MM-DD'
+  if(!v) return;
+  const [y,m,d] = v.split('-').map(Number);
+  blkHoursDate = new Date(y, m-1, d); // local-time date, avoids UTC day shift
+  renderBlockHours();
+});
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>
