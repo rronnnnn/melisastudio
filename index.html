@@ -198,6 +198,29 @@
   .notice.show{display:flex;}
   .notice svg{width:18px;height:18px;flex:none;margin-top:1px;stroke:var(--cocoa-deep);stroke-width:2;fill:none;}
 
+  /* lip blush disclaimer */
+  .lip-modal{max-width:600px;padding:30px 30px 26px;}
+  .lip-warn-ico{width:64px;height:64px;margin:0 auto 14px;border-radius:50%;display:grid;place-items:center;
+    background:rgba(216,191,169,.35);border:1px solid var(--clay);}
+  .lip-warn-ico svg{width:34px;height:34px;stroke:var(--cocoa-deep);stroke-width:2;fill:none;}
+  .lip-title{font-family:'Cormorant Garamond',serif;font-size:23px;font-weight:600;color:var(--espresso);
+    text-align:center;line-height:1.3;margin-bottom:16px;letter-spacing:.02em;}
+  .lip-body{max-height:50vh;overflow-y:auto;padding:4px 14px 4px 4px;margin-right:-8px;
+    font-size:13.5px;line-height:1.55;color:var(--cocoa-deep);}
+  .lip-body h5{font-family:'Quicksand',sans-serif;font-size:12.5px;font-weight:700;text-transform:uppercase;
+    letter-spacing:.07em;color:var(--cocoa-deep);margin:18px 0 8px;}
+  .lip-body h5:first-of-type{margin-top:0;}
+  .lip-lead{font-weight:600;color:var(--espresso);margin:0 0 6px;}
+  .lip-body ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;}
+  .lip-body li{position:relative;padding-left:18px;}
+  .lip-body li::before{content:"";position:absolute;left:2px;top:8px;width:6px;height:6px;border-radius:50%;
+    background:var(--rose-deep);}
+  .lip-important{background:rgba(235,207,200,.42);border:1px solid var(--clay);border-radius:14px;
+    padding:12px 14px;margin:10px 0;}
+  .lip-important h5{margin-top:0;}
+  .lip-thanks{text-align:center;font-family:'Cormorant Garamond',serif;font-size:19px;
+    color:var(--espresso);margin:20px 0 0;}
+
   .nav{display:flex;gap:12px;margin-top:24px;}
   .btn{flex:1;padding:14px;border:none;border-radius:16px;font-family:'Quicksand',sans-serif;font-weight:600;font-size:15px;
     cursor:pointer;transition:.25s;letter-spacing:.03em;}
@@ -571,6 +594,21 @@
     </div>
   </div>
 
+  <!-- LIP BLUSH DISCLAIMER -->
+  <div class="overlay" id="lipOverlay">
+    <div class="modal glass lip-modal">
+      <div class="lip-warn-ico">
+        <svg viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+      </div>
+      <div class="lip-title" id="lipTitle"></div>
+      <div class="lip-body" id="lipBody"></div>
+      <div class="nav">
+        <button class="btn btn-ghost" id="lipCancelBtn"></button>
+        <button class="btn btn-primary" id="lipAcceptBtn"></button>
+      </div>
+    </div>
+  </div>
+
   <!-- CANCELLATION PAGE (shown only on ?cancel=TOKEN) -->
   <div id="cancelPage">
     <div class="cancel-wrap">
@@ -785,6 +823,172 @@ const I18N = {
   }
 };
 
+/* Lip blush pre/post-care disclaimer — structured per language, rendered on open */
+const LIP_DISCLAIMER = {
+  sq: {
+    title:"UDHËZUES PËR KLIENTËT – PMU LIP BLUSH",
+    cancel:"Mbyll", accept:"Pranoj & Vazhdo",
+    blocks:[
+      {type:'lead', head:"Para procedurës – Parapërgatitja", text:"Klienti duhet t'i ketë parasysh këto të paktën 5–7 ditë para procedurës:"},
+      {type:'list', head:"Çfarë duhet të shmangë", items:[
+        "Pa filler në buzë minimum 4 javë para procedurës",
+        "Pa botox rreth buzëve minimum 3–4 javë para",
+        "Pa alkool 24–48 orë para procedurës",
+        "Pa kafe ose pije energjike 24 orë para",
+        "Pa aspirinë, ibuprofen, vitamina E, omega 3 (48 orë para)",
+        "Pa peeling kimik, lazer ose microneedling rreth buzëve (2 javë para)",
+        "Pa scrub, wax ose trajtime agresive në buzë (3–5 ditë para)"]},
+      {type:'list', head:"Kujdes për buzët", items:[
+        "Hidratoni buzët çdo ditë me lip balm ose vaselinë",
+        "Nëse buzët janë shumë të thata apo të çara, procedura mund të shtyhet"]},
+      {type:'important', head:"Shumë e rëndësishme", text:"Nëse klienti ka pasur herpes (cold sore), rekomandohet marrja e antiviralit (acyclovir ose ekuivalent) 2–3 ditë para dhe pas procedurës, sipas këshillës së mjekut."},
+      {type:'list', head:"Procedura nuk rekomandohet nëse", items:[
+        "Klientja është shtatzënë ose në gji",
+        "Ka herpes aktiv, infeksione ose plagë në buzë",
+        "Ka sëmundje autoimune të rënda (pa leje mjeku)",
+        "Ka diabet të pakontrolluar"]},
+      {type:'list', head:"Pas procedurës – Mirëmbajtja · 24–48 orët e para", items:[
+        "Ënjtje dhe ndjeshmëri janë normale",
+        "Ngjyra do të duket më e errët në fillim",
+        "Mos i prekni buzët me duar të pista",
+        "Aplikoni krem shërues sipas udhëzimit të teknikes"]},
+      {type:'list', head:"Çfarë duhet të shmangni (7–10 ditë)", items:[
+        "Pa puthje",
+        "Pa ushqime pikante, shumë të nxehta ose shumë të kripura",
+        "Pa alkool",
+        "Pa sauna, pishinë, det",
+        "Pa ekspozim direkt në diell ose solarium",
+        "Pa lipstick, gloss ose makeup në buzë",
+        "Mos i hiqni koret (shumë e rëndësishme!)"]},
+      {type:'list', head:"Çfarë duhet të bëni", items:[
+        "Hidratoni buzët disa herë në ditë",
+        "Pini shumë ujë",
+        "Mbani buzët të pastra dhe të mbrojtura"]},
+      {type:'list', head:"Procesi i shërimit", items:[
+        "Kore të lehta shfaqen ditën 3–5",
+        "Ngjyra zbehet rreth 30–50% pas shërimit",
+        "Rezultati final shihet pas 4–6 javësh"]},
+      {type:'list', head:"Retouch", items:[
+        "Retouch rekomandohet pas 6–8 javësh",
+        "Është pjesë shumë e rëndësishme e rezultatit final"]},
+      {type:'thanks', text:"Faleminderit për besimin!"}
+    ]
+  },
+  en: {
+    title:"CLIENT GUIDE – PMU LIP BLUSH",
+    cancel:"Close", accept:"Accept & Continue",
+    blocks:[
+      {type:'lead', head:"Before the procedure – Preparation", text:"Please keep the following in mind at least 5–7 days before the procedure:"},
+      {type:'list', head:"What to avoid", items:[
+        "No lip filler for at least 4 weeks before the procedure",
+        "No botox around the lips for at least 3–4 weeks before",
+        "No alcohol 24–48 hours before the procedure",
+        "No coffee or energy drinks 24 hours before",
+        "No aspirin, ibuprofen, vitamin E or omega 3 (48 hours before)",
+        "No chemical peel, laser or microneedling around the lips (2 weeks before)",
+        "No scrub, wax or aggressive treatments on the lips (3–5 days before)"]},
+      {type:'list', head:"Lip care", items:[
+        "Moisturise your lips every day with lip balm or vaseline",
+        "If your lips are very dry or cracked, the procedure may be postponed"]},
+      {type:'important', head:"Very important", text:"If you have had herpes (cold sores), taking an antiviral (acyclovir or equivalent) 2–3 days before and after the procedure is recommended, as advised by your doctor."},
+      {type:'list', head:"The procedure is not recommended if", items:[
+        "You are pregnant or breastfeeding",
+        "You have active herpes, infections or wounds on the lips",
+        "You have a severe autoimmune disease (without a doctor's permission)",
+        "You have uncontrolled diabetes"]},
+      {type:'list', head:"After the procedure – Aftercare · The first 24–48 hours", items:[
+        "Swelling and sensitivity are normal",
+        "The colour will look darker at first",
+        "Do not touch your lips with dirty hands",
+        "Apply the healing cream as instructed by the technician"]},
+      {type:'list', head:"What to avoid (7–10 days)", items:[
+        "No kissing",
+        "No spicy, very hot or very salty foods",
+        "No alcohol",
+        "No sauna, swimming pool or sea",
+        "No direct sun exposure or tanning beds",
+        "No lipstick, gloss or makeup on the lips",
+        "Do not pick off the scabs (very important!)"]},
+      {type:'list', head:"What to do", items:[
+        "Moisturise your lips several times a day",
+        "Drink plenty of water",
+        "Keep your lips clean and protected"]},
+      {type:'list', head:"The healing process", items:[
+        "Light scabs appear on days 3–5",
+        "The colour fades by about 30–50% after healing",
+        "The final result is seen after 4–6 weeks"]},
+      {type:'list', head:"Retouch", items:[
+        "A retouch is recommended after 6–8 weeks",
+        "It is a very important part of the final result"]},
+      {type:'thanks', text:"Thank you for your trust!"}
+    ]
+  },
+  mk: {
+    title:"УПАТСТВО ЗА КЛИЕНТИ – PMU LIP BLUSH",
+    cancel:"Затвори", accept:"Прифаќам и продолжи",
+    blocks:[
+      {type:'lead', head:"Пред процедурата – Подготовка", text:"Клиентот треба да го има предвид следново најмалку 5–7 дена пред процедурата:"},
+      {type:'list', head:"Што треба да се избегнува", items:[
+        "Без филер во усните минимум 4 недели пред процедурата",
+        "Без ботокс околу усните минимум 3–4 недели пред",
+        "Без алкохол 24–48 часа пред процедурата",
+        "Без кафе или енергетски пијалаци 24 часа пред",
+        "Без аспирин, ибупрофен, витамин Е, омега 3 (48 часа пред)",
+        "Без хемиски пилинг, ласер или микронидлинг околу усните (2 недели пред)",
+        "Без скраб, депилација или агресивни третмани на усните (3–5 дена пред)"]},
+      {type:'list', head:"Грижа за усните", items:[
+        "Хидрирајте ги усните секој ден со балсам за усни или вазелин",
+        "Доколку усните се многу суви или испукани, процедурата може да се одложи"]},
+      {type:'important', head:"Многу важно", text:"Доколку клиентот имал херпес (cold sore), се препорачува земање антивирал (ацикловир или еквивалент) 2–3 дена пред и по процедурата, според совет на лекар."},
+      {type:'list', head:"Процедурата не се препорачува доколку", items:[
+        "Клиентката е бремена или дои",
+        "Има активен херпес, инфекции или рани на усните",
+        "Има тешки автоимуни болести (без дозвола од лекар)",
+        "Има неконтролиран дијабетес"]},
+      {type:'list', head:"По процедурата – Нега · Првите 24–48 часа", items:[
+        "Отекување и чувствителност се нормални",
+        "Бојата на почеток ќе изгледа потемна",
+        "Не ги допирајте усните со нечисти раце",
+        "Нанесувајте крема за заздравување според упатството на техничарот"]},
+      {type:'list', head:"Што треба да избегнувате (7–10 дена)", items:[
+        "Без бакнување",
+        "Без лути, многу топли или многу солени јадења",
+        "Без алкохол",
+        "Без сауна, базен, море",
+        "Без директно изложување на сонце или солариум",
+        "Без кармин, сјај или шминка на усните",
+        "Не ги вадете крустите (многу важно!)"]},
+      {type:'list', head:"Што треба да правите", items:[
+        "Хидрирајте ги усните неколку пати на ден",
+        "Пијте многу вода",
+        "Чувајте ги усните чисти и заштитени"]},
+      {type:'list', head:"Процес на заздравување", items:[
+        "Лесни крусти се појавуваат на 3–5 ден",
+        "Бојата избледува за околу 30–50% по заздравувањето",
+        "Финалниот резултат се гледа по 4–6 недели"]},
+      {type:'list', head:"Ретуш", items:[
+        "Ретуш се препорачува по 6–8 недели",
+        "Тоа е многу важен дел од финалниот резултат"]},
+      {type:'thanks', text:"Ви благодариме за довербата!"}
+    ]
+  }
+};
+
+function renderLipDisclaimer(){
+  const d = LIP_DISCLAIMER[currentLang] || LIP_DISCLAIMER.sq;
+  document.getElementById('lipTitle').textContent = d.title;
+  document.getElementById('lipCancelBtn').textContent = d.cancel;
+  document.getElementById('lipAcceptBtn').textContent = d.accept;
+  const li = arr => '<ul>'+arr.map(x=>'<li>'+x+'</li>').join('')+'</ul>';
+  document.getElementById('lipBody').innerHTML = d.blocks.map(b=>{
+    if(b.type==='lead')      return '<h5>'+b.head+'</h5><p class="lip-lead">'+b.text+'</p>';
+    if(b.type==='list')      return '<h5>'+b.head+'</h5>'+li(b.items);
+    if(b.type==='important') return '<div class="lip-important"><h5>'+b.head+'</h5><p style="margin:0">'+b.text+'</p></div>';
+    if(b.type==='thanks')    return '<p class="lip-thanks">'+b.text+'</p>';
+    return '';
+  }).join('');
+}
+
 let currentLang = localStorage.getItem('melisaLang') || 'sq';
 if(!I18N[currentLang]) currentLang = 'sq';
 
@@ -822,6 +1026,8 @@ function setLang(lang){
   localStorage.setItem('melisaLang', lang);
   applyStaticI18n();
   refreshDynamicI18n();
+  const lo = document.getElementById('lipOverlay');
+  if(lo && lo.classList.contains('show')) renderLipDisclaimer();
 }
 
 document.querySelectorAll('.lang-opt').forEach(btn=>{
@@ -1037,10 +1243,27 @@ async function sendCancellationNotice(booking, svcLabel, prettyDate){
    BOOKING FLOW
    ============================================================ */
 document.querySelectorAll('.card').forEach(c=>{
-  c.addEventListener('click',()=>openBooking(c.dataset.service));
+  c.addEventListener('click',()=>{
+    // Lip blush requires acknowledging the pre/post-care disclaimer first
+    if(c.dataset.service==='lipblush'){ openLipDisclaimer(); }
+    else { openBooking(c.dataset.service); }
+  });
 });
 $('closeBtn').addEventListener('click',closeBooking);
 overlay.addEventListener('click',e=>{ if(e.target===overlay) closeBooking(); });
+
+/* ---- lip blush disclaimer ---- */
+const lipOverlay = $('lipOverlay');
+function openLipDisclaimer(){
+  renderLipDisclaimer();
+  lipOverlay.querySelector('.lip-body').scrollTop = 0;
+  lipOverlay.classList.add('show');
+  document.body.style.overflow='hidden';
+}
+function closeLipDisclaimer(){ lipOverlay.classList.remove('show'); document.body.style.overflow=''; }
+$('lipCancelBtn').addEventListener('click',closeLipDisclaimer);
+$('lipAcceptBtn').addEventListener('click',()=>{ closeLipDisclaimer(); openBooking('lipblush'); });
+lipOverlay.addEventListener('click',e=>{ if(e.target===lipOverlay) closeLipDisclaimer(); });
 
 function openBooking(svc){
   state = { service:svc, stepKey:'contact', date:null, time:null, opts:[],
