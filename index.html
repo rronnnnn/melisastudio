@@ -1469,7 +1469,7 @@ async function renderCalendar(){
     if(date<today){ btn.disabled=true; }
     if(blockedDates.has(dateStr(date))){
       btn.disabled=true;
-      btn.style.cssText='background:#FDECEA; color:#C0392B; opacity:1;';
+      btn.style.cssText='opacity:.28; cursor:not-allowed;';
       grid.appendChild(btn);
       continue;
     }
