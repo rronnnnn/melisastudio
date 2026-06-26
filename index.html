@@ -2041,7 +2041,8 @@ async function fetchBookingsForDayAdmin(){
   try {
     const { data, error } = await sb.from('bookings')
       .select('time, status, service, duration_minutes')
-      .eq('date', dateStr(blkHoursDate));
+      .eq('date', dateStr(blkHoursDate))
+      .neq('status', 'rejected');
     if(error) throw error;
     adminDayBookings = data || [];
   } catch(e){
