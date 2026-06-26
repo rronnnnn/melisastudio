@@ -267,7 +267,7 @@
   #adminPanel.show{display:block;}
 
   .admin-header{text-align:center;margin-bottom:36px;}
-  .admin-logo{display:block;margin:0 auto 12px;width:120px;height:auto;}
+  .admin-logo{display:block;margin:0 auto 12px;width:200px;height:auto;}
   .admin-header .brand{font-size:clamp(42px,8vw,72px);}
   .admin-badge{display:inline-block;background:linear-gradient(135deg,var(--cocoa),var(--cocoa-deep));
     color:#fff;font-size:11px;letter-spacing:.15em;text-transform:uppercase;font-weight:700;
@@ -418,7 +418,6 @@
   <div id="adminPanel">
     <div class="admin-header">
       <img class="admin-logo" src="MstudioLogo.png" alt="Studio Melisa">
-      <div class="brand">Studio Melisa</div>
       <div class="admin-badge">✦ Admin</div>
     </div>
 
@@ -1140,7 +1139,7 @@ function slotStatus(S, D, bookings){
   let pending=false;
   for(const b of bookings){
     const Bs=toMin(b.time);
-    const Bd=b.duration_minutes || SERVICE_DURATION[b.service] || 60;
+    const Bd=(b.duration_minutes || SERVICE_DURATION[b.service] || 60) - 1;
     if(overlaps(S, D, Bs, Bd)){
       if(b.status==='approved') return 'approved';
       if(b.status==='pending') pending=true;
