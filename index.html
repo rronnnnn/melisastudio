@@ -415,7 +415,7 @@
 
     <footer>
       <span data-i18n="footer_booked">Booked with love at</span> <span class="fb">Studio Melisa</span>
-      <div data-i18n="footer_copyright">© 2026 High Level. All Rights Reserved.</div>
+      <div data-i18n-html="footer_copyright">© 2026 <a href="https://www.highlevel.mk" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">High Level</a>. All Rights Reserved.</div>
     </footer>
   </div>
 
@@ -593,12 +593,17 @@
 
       <!-- REVIEW -->
       <div class="step" data-stepkey="review">
+        <!-- Deposit disclaimer — shown only for manicure & pedicure (toggled in goStep) -->
+        <div class="notice" id="depositNotice">
+          <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+          <span data-i18n="deposit_disclaimer">To confirm your booking, the deposit must be paid at least 7 days before the appointment. If the deposit is not paid within this period, the booking will be automatically cancelled and the slot will be released for other clients.</span>
+        </div>
         <div class="done-ico">&#127800;</div>
         <h4 style="text-align:center" data-i18n="h_review">Review your booking</h4>
         <div class="summary" id="summary"></div>
         <div class="nav">
           <button class="btn btn-ghost" data-back data-i18n="btn_back">Back</button>
-          <button class="btn btn-wa" id="confirmBtn" data-i18n="btn_send">Send to Studio Melisa</button>
+          <button class="btn btn-wa" id="confirmBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="vertical-align:middle;margin-right:6px;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg><span class="btn-label" data-i18n="btn_send">Send to Studio Melisa</span></button>
         </div>
         <button class="btn btn-email" id="emailBtn" data-i18n="btn_email">Book via Email</button>
       </div>
@@ -800,11 +805,12 @@ const I18N = {
   sq: {
     tagline:"Thonjtë · Vetullat · Lip Blush",
     svc_manicure:"Manikyr", svc_pedicure:"Pedikyr", svc_eyebrows:"Vetullat", svc_lipblush:"Lip Blush",
-    book:"Rezervo", footer_booked:"Rezervuar me dashuri në", footer_copyright:"© 2026 High Level. All Rights Reserved.",
+    book:"Rezervo", footer_booked:"Rezervuar me dashuri në", footer_copyright:"© 2026 <a href='https://www.highlevel.mk' target='_blank' rel='noopener' style='color:inherit;text-decoration:underline;'>High Level</a>. All Rights Reserved.",
     modal_sub:"Rezervoni terminin tuaj",
     h_contact:"Të dhënat tuaja", h_nailtype:"Çfarë lloji thonjsh keni?",
     h_servicetype:"Cilin shërbim ju nevojitet?", h_style:"Zgjidhni stilin tuaj",
     acrylic_warn:"Ju lutemi vini re: nëse aktualisht keni thonj akrilikë, sigurohuni që t'i hiqni para terminit tuaj — studioja nuk ofron shërbim për heqjen e akrilit.",
+    deposit_disclaimer:"Për të konfirmuar rezervimin tuaj, kapari duhet të paguhet të paktën 7 ditë para terminit. Nëse kapari nuk paguhet brenda këtij afati, rezervimi do të anulohet automatikisht dhe termini do të lirohet për klientë të tjerë.",
     h_date:"Zgjidhni një datë", h_time:"Zgjidhni një orë", h_review:"Rishikoni rezervimin tuaj",
     lbl_name:"Emri", lbl_surname:"Mbiemri", lbl_email:"Email", lbl_phone:"Numri i telefonit",
     btn_continue:"Vazhdo", btn_back:"Prapa", btn_review:"Rishiko",
@@ -831,11 +837,12 @@ const I18N = {
   en: {
     tagline:"Nails · Brows · Lip Blush",
     svc_manicure:"Manicure", svc_pedicure:"Pedicure", svc_eyebrows:"Eyebrows", svc_lipblush:"Lip Blush",
-    book:"Book", footer_booked:"Booked with love at", footer_copyright:"© 2026 High Level. All Rights Reserved.",
+    book:"Book", footer_booked:"Booked with love at", footer_copyright:"© 2026 <a href='https://www.highlevel.mk' target='_blank' rel='noopener' style='color:inherit;text-decoration:underline;'>High Level</a>. All Rights Reserved.",
     modal_sub:"Book your appointment",
     h_contact:"Your details", h_nailtype:"What type of nails do you have?",
     h_servicetype:"What service do you need?", h_style:"Choose your style",
     acrylic_warn:"Please note: if you currently have acrylic nails, make sure to have them removed before your appointment — our studio does not offer acrylic removal services.",
+    deposit_disclaimer:"To confirm your booking, the deposit must be paid at least 7 days before the appointment. If the deposit is not paid within this period, the booking will be automatically cancelled and the slot will be released for other clients.",
     h_date:"Pick a date", h_time:"Choose a time", h_review:"Review your booking",
     lbl_name:"Name", lbl_surname:"Surname", lbl_email:"Email", lbl_phone:"Phone number",
     btn_continue:"Continue", btn_back:"Back", btn_review:"Review",
@@ -862,11 +869,12 @@ const I18N = {
   mk: {
     tagline:"Нокти · Веѓи · Lip Blush",
     svc_manicure:"Маникир", svc_pedicure:"Педикир", svc_eyebrows:"Веѓи", svc_lipblush:"Lip Blush",
-    book:"Резервирај", footer_booked:"Резервирано со љубов во", footer_copyright:"© 2026 High Level. All Rights Reserved.",
+    book:"Резервирај", footer_booked:"Резервирано со љубов во", footer_copyright:"© 2026 <a href='https://www.highlevel.mk' target='_blank' rel='noopener' style='color:inherit;text-decoration:underline;'>High Level</a>. All Rights Reserved.",
     modal_sub:"Резервирајте го вашиот термин",
     h_contact:"Вашите податоци", h_nailtype:"Каков тип на нокти имате?",
     h_servicetype:"Која услуга ви треба?", h_style:"Изберете го вашиот стил",
     acrylic_warn:"Ве молиме имајте предвид: доколку моментално имате акрилни нокти, погрижете се да ги отстраните пред вашиот термин — нашето студио не нуди услуга за отстранување на акрил.",
+    deposit_disclaimer:"За да ја потврдите вашата резервација, капарот мора да се плати најмалку 7 дена пред терминот. Доколку капарот не се плати во овој рок, резервацијата автоматски ќе биде откажана и терминот ќе биде ослободен за други клиенти.",
     h_date:"Изберете датум", h_time:"Изберете време", h_review:"Прегледајте ја вашата резервација",
     lbl_name:"Име", lbl_surname:"Презиме", lbl_email:"Е-пошта", lbl_phone:"Телефонски број",
     btn_continue:"Продолжи", btn_back:"Назад", btn_review:"Преглед",
@@ -1073,6 +1081,9 @@ function applyStaticI18n(){
   });
   document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
     el.placeholder = t(el.getAttribute('data-i18n-placeholder'));
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach(el=>{
+    el.innerHTML = t(el.getAttribute('data-i18n-html'));
   });
   document.querySelectorAll('.lang-opt').forEach(b=>{
     b.classList.toggle('active', b.dataset.lang===currentLang);
@@ -1327,9 +1338,15 @@ function openLipDisclaimer(){
   renderLipDisclaimer();
   lipOverlay.querySelector('.lip-body').scrollTop = 0;
   lipOverlay.classList.add('show');
+  // Lock both <html> and <body> — the viewport scrolls on <html> (see openBooking).
+  document.documentElement.style.overflow='hidden';
   document.body.style.overflow='hidden';
 }
-function closeLipDisclaimer(){ lipOverlay.classList.remove('show'); document.body.style.overflow=''; }
+function closeLipDisclaimer(){
+  lipOverlay.classList.remove('show');
+  document.documentElement.style.overflow='';
+  document.body.style.overflow='';
+}
 $('lipCancelBtn').addEventListener('click',closeLipDisclaimer);
 $('lipAcceptBtn').addEventListener('click',()=>{ closeLipDisclaimer(); openBooking('lipblush'); });
 lipOverlay.addEventListener('click',e=>{ if(e.target===lipOverlay) closeLipDisclaimer(); });
@@ -1351,10 +1368,10 @@ function openBooking(svc){
     buildSingleSelect('serviceOpts',[{label:'Refill'},{label:'New Set (artificial tips)'}],o=>{
       state.serviceType=o.label; $('errService').textContent='';
     });
-    // Pedicure: both styles are 1hr. Manicure: One Color 1hr, Design 1.5hr.
+    // Pedicure: both styles are 1hr. Manicure: One Color 1hr, Design 1hr.
     const styleOpts = svc==='pedicure'
       ? [{label:'One Color',dur:60},{label:'Design',dur:60}]
-      : [{label:'One Color',dur:60},{label:'Design',dur:90}];
+      : [{label:'One Color',dur:60},{label:'Design',dur:60}];
     buildSingleSelect('styleOpts',styleOpts,o=>{
       state.style=o.label; state.duration=o.dur; $('errStyle').textContent='';
     });
@@ -1381,9 +1398,17 @@ function openBooking(svc){
   document.querySelectorAll('#fName,#fSurname,#fEmail,#fPhone').forEach(i=>i.value='');
   goStep('contact');
   overlay.classList.add('show');
+  // Scroll-lock the page behind the modal. The viewport scrolls on <html>
+  // (body's overflow-x:hidden makes its own overflow-y computed scrollable),
+  // so we must lock the documentElement too, not just <body>.
+  document.documentElement.style.overflow='hidden';
   document.body.style.overflow='hidden';
 }
-function closeBooking(){ overlay.classList.remove('show'); document.body.style.overflow=''; }
+function closeBooking(){
+  overlay.classList.remove('show');
+  document.documentElement.style.overflow='';
+  document.body.style.overflow='';
+}
 
 document.querySelectorAll('[data-next]').forEach(b=>b.addEventListener('click',next));
 document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>{
@@ -1398,7 +1423,11 @@ function goStep(key){
   document.querySelectorAll('.step').forEach(s=>s.classList.toggle('show', s.dataset.stepkey===key));
   renderDots(seq, key);
   if(key==='time') loadAndRenderSlots();
-  if(key==='review') renderSummary();
+  if(key==='review'){
+    renderSummary();
+    // Deposit disclaimer applies to manicure & pedicure only.
+    $('depositNotice').classList.toggle('show', MULTISTEP_SERVICES.includes(state.service));
+  }
 }
 
 function validateStep(key){
@@ -1643,7 +1672,7 @@ function renderSummary(){
 $('confirmBtn').addEventListener('click', async ()=>{
   const btn = $('confirmBtn');
   btn.disabled = true;
-  btn.textContent = t('btn_saving');
+  btn.querySelector('.btn-label').textContent = t('btn_saving');
 
   const s = SERVICES[state.service];
   const isMulti = MULTISTEP_SERVICES.includes(state.service);
@@ -1705,7 +1734,7 @@ Please confirm or let me know if you'd like to reschedule. Thank you! 💕`;
 
   window.open('https://wa.me/'+SALON_WHATSAPP+'?text='+encodeURIComponent(msg),'_blank');
   btn.disabled = false;
-  btn.textContent = t('btn_send');
+  btn.querySelector('.btn-label').textContent = t('btn_send');
 
   // Confirmation popup
   document.getElementById('sentOverlay').classList.add('show');
@@ -2072,12 +2101,15 @@ function openHoursPanel(date){
     b.classList.toggle('active', b.dataset.svc === '');
   });
   $('hoursOverlay').classList.add('show');
+  // Lock both <html> and <body> — the viewport scrolls on <html> (see openBooking).
+  document.documentElement.style.overflow='hidden';
   document.body.style.overflow='hidden';
   renderBlockHours();
 }
 
 function closeHoursPanel(){
   $('hoursOverlay').classList.remove('show');
+  document.documentElement.style.overflow='';
   document.body.style.overflow='';
 }
 
