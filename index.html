@@ -197,6 +197,11 @@
     border:1px solid var(--cocoa-deep);font-weight:600;font-size:10.5px;line-height:1.25;
     text-decoration:none;opacity:1;cursor:default;}
   .admin-slots .slot.booked:hover{background:rgba(122,92,69,.24);}
+  /* status-tinted booked indicators — mirror the approved/pending booking-card colors */
+  .admin-slots .slot.booked.booked-approved,
+  .admin-slots .slot.booked.booked-approved:hover{background:rgba(92,138,92,.24);color:#3e6b3e;border-color:#5C8A5C;}
+  .admin-slots .slot.booked.booked-pending,
+  .admin-slots .slot.booked.booked-pending:hover{background:rgba(196,127,58,.24);color:#8a561f;border-color:#C47F3A;}
 
   .opts{display:grid;gap:11px;}
   .opt{display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:16px;cursor:pointer;
@@ -2095,6 +2100,8 @@ async function renderBlockHours(){
       const emoji = SERVICE_EMOJI[booking.service] || '📅';
       btn.textContent = emoji+' '+label+' — '+booking.status;
       btn.classList.add('booked');
+      // tint by status to match the approved/pending booking cards
+      btn.classList.add(booking.status==='approved' ? 'booked-approved' : 'booked-pending');
     } else {
       btn.textContent = label;
       const isBlocked=adminBlockedHours.has(label);
