@@ -1103,7 +1103,7 @@ const SHARED_WORKER_SERVICES = ['manicure', 'eyebrows', 'lipblush'];
 const SERVICES = {
   manicure: { title:"Manicure", interval:30, optTitle:"Select your nail styles",
     options:["French Tip","Natural","Design","Tips"] },
-  pedicure: { title:"Pedicure", interval:60, optTitle:"Select your nail styles",
+  pedicure: { title:"Pedicure", interval:30, optTitle:"Select your nail styles",
     options:["French Tip","Natural","Design","Tips"] },
   eyebrows: { title:"Eyebrows", interval:15, optTitle:"Select your brow services",
     options:["Eyebrow Lamination","Shaping","Cleaning"] },
@@ -1119,7 +1119,7 @@ let state = { service:null, stepKey:'contact', date:null, time:null, opts:[],
 let dayBookings = []; // cached bookings for the selected date
 
 /* ---- duration + conflict helpers ---- */
-const SERVICE_DURATION = { manicure:60, pedicure:60, eyebrows:15, lipblush:120 };
+const SERVICE_DURATION = { manicure:59, pedicure:59, eyebrows:15, lipblush:120 };
 const GRID = 15; // slot generation interval, minutes
 
 function toMin(hhmm){ const [h,m]=hhmm.split(':').map(Number); return h*60+m; }
@@ -1136,7 +1136,7 @@ function slotStatus(S, D, bookings){
   let pending=false;
   for(const b of bookings){
     const Bs=toMin(b.time);
-    const Bd=(b.duration_minutes || SERVICE_DURATION[b.service] || 60) - 1;
+    const Bd=(b.duration_minutes || SERVICE_DURATION[b.service] || 60);
     if(overlaps(S, D, Bs, Bd)){
       if(b.status==='approved') return 'approved';
       if(b.status==='pending') pending=true;
@@ -1350,19 +1350,19 @@ function openBooking(svc){
     buildSingleSelect('serviceOpts',[{label:'Refill'},{label:'New Set (artificial tips)'}],o=>{
       state.serviceType=o.label; $('errService').textContent='';
     });
-    // Pedicure: both styles are 1hr. Manicure: One Color 1hr, Design 1hr.
+    // Both styles block 59 min (One Color & Design) for manicure and pedicure.
     const styleOpts = svc==='pedicure'
-      ? [{label:'One Color',dur:60},{label:'Design',dur:60}]
-      : [{label:'One Color',dur:60},{label:'Design',dur:60}];
+      ? [{label:'One Color',dur:59},{label:'Design',dur:59}]
+      : [{label:'One Color',dur:59},{label:'Design',dur:59}];
     buildSingleSelect('styleOpts',styleOpts,o=>{
       state.style=o.label; state.duration=o.dur; $('errStyle').textContent='';
     });
   } else if(svc==='eyebrows'){
-    // "What do you need?" sets the duration (Cleaning 15min, Lifting 45min).
+    // "What do you need?" sets the duration (Cleaning 14min, Lifting 44min).
     // Stored in service_type (reusing the existing column).
     buildSingleSelect('browServiceOpts',[
-      {label:t('brow_cleaning'),dur:15},
-      {label:t('brow_lifting'),dur:45}
+      {label:t('brow_cleaning'),dur:14},
+      {label:t('brow_lifting'),dur:44}
     ],o=>{ state.serviceType=o.label; state.duration=o.dur; $('errBrowService').textContent=''; });
     // "Would you like coloring?" is informational only — stored in nail_type (reused column).
     buildSingleSelect('browColorOpts',[
@@ -2080,7 +2080,7 @@ async function renderBlockHours(){
     btn.className='slot';
     // a booking occupies every 30-min slot it overlaps (uses true duration)
     const booking = adminDayBookings.find(b =>
-      overlaps(min, 30, toMin(b.time), (b.duration_minutes || SERVICE_DURATION[b.service] || 60) - 1));
+      overlaps(min, 30, toMin(b.time), (b.duration_minutes || SERVICE_DURATION[b.service] || 60)));
     if(booking){
       // booking takes visual priority over a manual block and is read-only (no toggle)
       const emoji = SERVICE_EMOJI[booking.service] || '📅';
