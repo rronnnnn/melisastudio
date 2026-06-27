@@ -2124,7 +2124,7 @@ async function renderBlockHours(){
     btn.className='slot';
     // a booking occupies every 30-min slot it overlaps (uses true duration)
     const booking = adminDayBookings.find(b =>
-      overlaps(min, 30, toMin(b.time), b.duration_minutes || SERVICE_DURATION[b.service] || 60));
+      overlaps(min, 30, toMin(b.time), (b.duration_minutes || SERVICE_DURATION[b.service] || 60) - 1));
     if(booking){
       // booking takes visual priority over a manual block and is read-only (no toggle)
       const emoji = SERVICE_EMOJI[booking.service] || '📅';
