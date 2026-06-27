@@ -290,7 +290,12 @@
 
   .booking-card{background:rgba(255,255,255,.5);border:1px solid var(--glass-line);border-radius:18px;
     padding:20px 22px;margin-bottom:14px;transition:.2s;}
-  .booking-card.pending-card{border-color:var(--pending-border);background:rgba(245,158,11,.08);}
+  /* status-tinted cards — muted to match the nude/brown palette; accent on the left edge.
+     Amber #C47F3A (pending) and green #5C8A5C (approved) mirror the badge colors. */
+  .booking-card.pending-card{border-color:rgba(196,127,58,.35);
+    border-left:4px solid rgba(196,127,58,.6);background:rgba(196,127,58,.07);}
+  .booking-card.approved-card{border-color:rgba(92,138,92,.32);
+    border-left:4px solid rgba(92,138,92,.6);background:rgba(92,138,92,.07);}
   .booking-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;}
   .booking-name{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;}
   .booking-badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
@@ -1624,8 +1629,11 @@ function renderSummary(){
   const s=SERVICES[state.service];
   const isMulti=MULTISTEP_SERVICES.includes(state.service);
   const isBrows=state.service==='eyebrows';
+  // Display-only: stored durations encode the −1 overlap buffer (59/44/14).
+  // Show the rounded customer-facing number (60/45/15). Never affects storage/overlap.
+  const dispDur = currentDuration()+1;
   // Eyebrows shows a start–end range (e.g. "15:00 - 15:45"); other flows keep the start time.
-  const timeVal = isBrows ? fmtTimeRange(state.time, currentDuration()) : state.time;
+  const timeVal = isBrows ? fmtTimeRange(state.time, dispDur) : state.time;
   const rows=[
     [t('sum_service'), svcTitle(state.service)],
     [t('sum_name'), $('fName').value.trim()+' '+$('fSurname').value.trim()],
@@ -1638,11 +1646,11 @@ function renderSummary(){
     rows.push([t('sum_nailtype'), state.nailType]);
     if(state.serviceType) rows.push([t('sum_servicetype'), state.serviceType]);
     rows.push([t('sum_style'), state.style]);
-    rows.push([t('sum_duration'), currentDuration()+' '+t('unit_min')]);
+    rows.push([t('sum_duration'), dispDur+' '+t('unit_min')]);
   } else if(isBrows){
     rows.push([t('sum_servicetype'), state.serviceType]);
     rows.push([t('sum_coloring'), state.nailType]);
-    rows.push([t('sum_duration'), currentDuration()+' '+t('unit_min')]);
+    rows.push([t('sum_duration'), dispDur+' '+t('unit_min')]);
   } else {
     rows.push([t('sum_styles'), state.opts.join(', ')]);
   }
@@ -1698,8 +1706,9 @@ $('emailBtn').addEventListener('click', async ()=>{
     // Still open the email client — don't block the user
   }
 
-  // mirror the review screen's time (eyebrows shows a start–end range)
-  const timeVal = state.service==='eyebrows' ? fmtTimeRange(state.time, duration) : state.time;
+  // mirror the review screen's time (eyebrows shows a start–end range).
+  // Display-only +1 to match renderSummary's dispDur (stored duration_minutes stays raw).
+  const timeVal = state.service==='eyebrows' ? fmtTimeRange(state.time, duration+1) : state.time;
   const name = $('fName').value.trim()+' '+$('fSurname').value.trim();
   const subject = 'Booking Request — Studio Melisa';
   const body =
@@ -1820,7 +1829,7 @@ function renderAdminBookings(bookings){
       </div>` : '';
     const actions = approveReject + freeSlotBtn;
     return `
-      <div class="booking-card ${b.status==='pending'?'pending-card':''} glass" id="card-${b.id}">
+      <div class="booking-card ${b.status==='pending'?'pending-card':b.status==='approved'?'approved-card':''} glass" id="card-${b.id}">
         <div class="booking-card-top">
           <div class="booking-name">${escHtml(b.name)}</div>
           <span class="booking-badge ${badgeClass}">${badgeText}</span>
