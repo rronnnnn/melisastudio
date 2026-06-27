@@ -2118,7 +2118,11 @@ async function renderBlockHours(){
   await Promise.all([fetchBlockedHoursAdmin(), fetchBookingsForDayAdmin()]);
 
   const grid=$('hoursPanelGrid'); grid.innerHTML='';
-  for(let min=OPEN_MIN; min<=BLK_CLOSE_MIN; min+=30){   // 08:00–22:00, 30-min intervals
+  // eyebrows uses its finer interval (15 min) from SERVICES; all other services stay at 30 min
+  const hoursStep = hoursFilterService === 'eyebrows'
+    ? (SERVICES.eyebrows.interval || 30)
+    : 30;
+  for(let min=OPEN_MIN; min<=BLK_CLOSE_MIN; min+=hoursStep){   // 08:00–22:00, step by selected service interval
     const label=fmtMin(min);
     const btn=document.createElement('button');
     btn.className='slot';
