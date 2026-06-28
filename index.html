@@ -1139,7 +1139,7 @@ let state = { service:null, stepKey:'contact', date:null, time:null, opts:[],
 let dayBookings = []; // cached bookings for the selected date
 
 /* ---- duration + conflict helpers ---- */
-const SERVICE_DURATION = { manicure:59, pedicure:59, eyebrows:15, lipblush:120 };
+const SERVICE_DURATION = { manicure:59, pedicure:59, eyebrows:15, lipblush:119 };
 const GRID = 15; // slot generation interval, minutes
 
 function toMin(hhmm){ const [h,m]=hhmm.split(':').map(Number); return h*60+m; }
@@ -1885,7 +1885,7 @@ function renderAdminBookings(bookings){
           <span>📅 ${b.date}</span>
           <span>🕐 ${b.time}</span>
           <span>💅 ${escHtml(svcLabel)}</span>
-          ${b.duration_minutes?`<span>⏱ ${b.duration_minutes} min</span>`:''}
+          ${b.duration_minutes?`<span>⏱ ${b.duration_minutes+1} min</span>`:''}
           <span>📱 ${escHtml(b.phone)}</span>
         </div>
         <div style="font-size:13px;color:var(--cocoa);margin-top:6px;">Options: ${escHtml(b.options||'—')}</div>
