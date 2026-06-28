@@ -447,16 +447,18 @@
 
     <!-- Bookings view (hidden until logged in) -->
     <div id="adminBookings" style="display:none;">
-      <!-- Block Days -->
-      <div class="admin-section-title">Block Days</div>
-      <div class="glass" style="padding:20px 22px;margin-bottom:24px;">
-        <div class="cal-head">
-          <button id="blkPrevM" aria-label="Previous month">&#8249;</button>
-          <div class="cal-month" id="blkMonth"></div>
-          <button id="blkNextM" aria-label="Next month">&#8250;</button>
+      <!-- Block Days (main admin only — hidden for the pedicure role) -->
+      <div id="adminBlockDays">
+        <div class="admin-section-title">Block Days</div>
+        <div class="glass" style="padding:20px 22px;margin-bottom:24px;">
+          <div class="cal-head">
+            <button id="blkPrevM" aria-label="Previous month">&#8249;</button>
+            <div class="cal-month" id="blkMonth"></div>
+            <button id="blkNextM" aria-label="Next month">&#8250;</button>
+          </div>
+          <div class="cal-grid" id="blkGrid"></div>
+          <div style="font-size:12.5px;color:var(--cocoa);margin-top:10px;">Single tap a day to set its blocked hours. Double tap a day to block (or unblock) the whole day.</div>
         </div>
-        <div class="cal-grid" id="blkGrid"></div>
-        <div style="font-size:12.5px;color:var(--cocoa);margin-top:10px;">Single tap a day to set its blocked hours. Double tap a day to block (or unblock) the whole day.</div>
       </div>
 
       <div class="admin-datefilter">
@@ -722,6 +724,14 @@
    CONFIGURATION
    ============================================================ */
 const ADMIN_PASSWORD = "melisab2026"; // change this to whatever Melisa wants
+
+/* ============================================================
+   PEDICURE ADMIN PASSWORD  ← change this later
+   Second admin role: the pedicure worker logs in with this
+   password and sees a simplified panel (pedicure bookings only).
+   ============================================================ */
+const PEDICURE_PASSWORD = "pedicure123";
+/* ============================================================ */
 
 /* Supabase — fill in your project URL and anon key */
 const SUPABASE_URL  = "https://dnhtvflvjxcdzkqpuhwh.supabase.co";
@@ -1736,6 +1746,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeBooking(); c
    ============================================================ */
 let adminFilter = 'pending';
 let adminDateFilter = null;   // 'YYYY-MM-DD' or null for all dates
+let adminRole = null;         // 'main' (full admin) or 'pedicure' (pedicure worker)
 let adminBlocked = new Set();          // 'YYYY-MM-DD' strings
 let adminBlockedHours = new Set();     // 'HH:MM' strings blocked for the selected date
 let blkHoursDate = new Date();         // date currently shown in the Block Hours panel
@@ -1749,6 +1760,8 @@ function initAdmin(){
   $('blkPrevM').addEventListener('click',()=>shiftBlkMonth(-1));
   $('blkNextM').addEventListener('click',()=>shiftBlkMonth(1));
   $('adminLogout').addEventListener('click',()=>{
+    adminRole = null;
+    sessionStorage.removeItem('melisaAdminRole');
     $('adminBookings').style.display='none';
     $('adminLogin').style.display='block';
     $('adminPass').value='';
@@ -1771,21 +1784,46 @@ function initAdmin(){
     $('adminDateInput').value = '';
     loadAdminBookings();
   });
+
+  // Restore an existing session (role kept in sessionStorage)
+  const savedRole = sessionStorage.getItem('melisaAdminRole');
+  if(savedRole === 'main' || savedRole === 'pedicure'){
+    adminRole = savedRole;
+    enterAdmin();
+  }
 }
 
 function handleAdminLogin(){
   const pass = $('adminPass').value;
   if(pass === ADMIN_PASSWORD){
-    $('adminErr').textContent='';
-    $('adminLogin').style.display='none';
-    $('adminBookings').style.display='block';
-    renderBlockCalendar();
-    loadAdminBookings();
+    adminRole = 'main';
+  } else if(pass === PEDICURE_PASSWORD){
+    adminRole = 'pedicure';
   } else {
     $('adminErr').textContent='Incorrect password. Try again.';
     $('adminPass').value='';
     $('adminPass').focus();
+    return;
   }
+  // Persist the role alongside the auth so a reload keeps the session
+  sessionStorage.setItem('melisaAdminRole', adminRole);
+  $('adminErr').textContent='';
+  enterAdmin();
+}
+
+// Show the logged-in admin view appropriate to the current role.
+// 'main' sees everything; 'pedicure' gets a simplified panel
+// (no Block Days, no calendar, no Block Hours) showing pedicure bookings only.
+function enterAdmin(){
+  $('adminLogin').style.display='none';
+  $('adminBookings').style.display='block';
+  if(adminRole === 'pedicure'){
+    $('adminBlockDays').style.display='none';
+  } else {
+    $('adminBlockDays').style.display='';
+    renderBlockCalendar();
+  }
+  loadAdminBookings();
 }
 
 async function loadAdminBookings(){
@@ -1794,6 +1832,10 @@ async function loadAdminBookings(){
 
   try {
     let query = sb.from('bookings').select('*').order('date').order('time');
+    // Pedicure worker only ever sees pedicure bookings
+    if(adminRole === 'pedicure'){
+      query = query.eq('service', 'pedicure');
+    }
     if(adminFilter !== 'all'){
       query = query.eq('status', adminFilter);
     }
