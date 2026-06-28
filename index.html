@@ -1937,7 +1937,7 @@ function renderAdminBookings(bookings){
         <div class="booking-meta">
           <span>📅 ${b.date}</span>
           <span>🕐 ${b.time}</span>
-          <span>💅 ${escHtml(svcLabel)}</span>
+          <span>${SERVICE_EMOJI[b.service]||'💅'} ${escHtml(svcLabel)}</span>
           ${b.duration_minutes?`<span>⏱ ${b.duration_minutes+1} min</span>`:''}
           <span>📱 ${escHtml(b.phone)}</span>
         </div>
@@ -2124,7 +2124,7 @@ let hoursFilterService = '';
 
 // bookings for the date shown in the panel (any status), used as read-only indicators
 let adminDayBookings = [];
-const SERVICE_EMOJI = { manicure:'💅', pedicure:'🦶', eyebrows:'👁️', lipblush:'💋' };
+const SERVICE_EMOJI = { manicure:'💅', pedicure:'🦶', eyebrows:'👁️', lipblush:'👄' };
 
 async function fetchBookingsForDayAdmin(){
   try {
