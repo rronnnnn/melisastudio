@@ -1,5 +1,6 @@
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const STUDIO_EMAIL = Deno.env.get("STUDIO_EMAIL") ?? "onboarding@resend.dev";
+const PEDICURE_EMAIL = Deno.env.get("PEDICURE_EMAIL") ?? "";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -16,6 +17,11 @@ Deno.serve(async (req) => {
 
   // Prefer the explicit cancelToken; fall back to the value on the booking row.
   const token = cancelToken || booking.cancel_token || "";
+
+  // Studio-side notifications for pedicure bookings go to the pedicure worker's
+  // inbox; everything else goes to the main studio email as before.
+  const studioRecipient =
+    booking.service === "pedicure" && PEDICURE_EMAIL ? PEDICURE_EMAIL : STUDIO_EMAIL;
 
   let subject, html, to;
   if (newStatus === "approved") {
@@ -45,7 +51,7 @@ Deno.serve(async (req) => {
 </div>`;
   } else if (newStatus === "cancelled") {
     // Notification to the studio that a customer cancelled their appointment.
-    to = STUDIO_EMAIL;
+    to = studioRecipient;
     subject = "A booking has been cancelled — Studio Melisa";
     html = `<div style="font-family:Arial,sans-serif;color:#5A4636;line-height:1.6;">
   <p>A booking has been cancelled:</p>
