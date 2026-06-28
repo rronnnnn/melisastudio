@@ -69,21 +69,45 @@ Deno.serve(async (req) => {
 </div>`;
   }
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ from: "Studio Melisa <bookings@studiomelisa.com>", to, subject, html }),
-  });
+  // Primary message (customer-facing for approve/reject, studio for cancel).
+  const messages = [{ to, subject, html }];
 
-  const data = await res.json();
+  // On approval/rejection, also notify the studio side (pedicure worker for
+  // pedicure bookings, otherwise the main studio inbox).
+  if (newStatus === "approved" || newStatus === "rejected") {
+    const heading = newStatus === "approved" ? "New confirmed booking" : "Booking rejected";
+    const intro = newStatus === "approved" ? "A booking was confirmed:" : "A booking was rejected:";
+    messages.push({
+      to: studioRecipient,
+      subject: `${heading} — ${svcLabel} — ${booking.date} at ${booking.time}`,
+      html: `<div style="font-family:Arial,sans-serif;color:#5A4636;line-height:1.6;">
+  <p>${intro}</p>
+  <p><strong>Customer:</strong> ${booking.name}<br><strong>Service:</strong> ${svcLabel}<br><strong>Date:</strong> ${booking.date}<br><strong>Time:</strong> ${booking.time}</p>
+</div>`,
+    });
+  }
+
+  const sendEmail = (msg) =>
+    fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from: "Studio Melisa <bookings@studiomelisa.com>", ...msg }),
+    });
+
+  // Send all emails in parallel so the studio copy adds no latency.
+  const responses = await Promise.all(messages.map(sendEmail));
+
+  // Base the HTTP response on the primary (customer) email.
+  const primary = responses[0];
+  const data = await primary.json();
   return new Response(JSON.stringify(data), {
     headers: {
       "Content-Type": "application/json",
       "Access-Control-Allow-Origin": "*",
     },
-    status: res.ok ? 200 : 400,
+    status: primary.ok ? 200 : 400,
   });
 });
