@@ -58,6 +58,16 @@ Deno.serve(async (req) => {
   <p><strong>${booking.name}</strong>, ${svcLabel}, ${booking.date} at ${booking.time}.</p>
   <p>The slot is now free again.</p>
 </div>`;
+  } else if (newStatus === "request") {
+    // New booking request notification to the studio (pedicure worker for
+    // pedicure bookings, otherwise the main studio inbox).
+    to = studioRecipient;
+    subject = `New Booking Request — ${svcLabel} — ${booking.date} at ${booking.time}`;
+    html = `<div style="font-family:Arial,sans-serif;color:#5A4636;line-height:1.6;">
+  <p>A new booking request has come in:</p>
+  <p><strong>Customer:</strong> ${booking.name}<br><strong>Phone:</strong> ${booking.phone}<br><strong>Email:</strong> ${booking.email}<br><strong>Service:</strong> ${svcLabel}<br><strong>Date:</strong> ${booking.date}<br><strong>Time:</strong> ${booking.time}${booking.options ? `<br><strong>Options:</strong> ${booking.options}` : ""}</p>
+  <p>Please review and approve or reject it in the admin panel.</p>
+</div>`;
   } else {
     to = booking.email;
     subject = "About your booking — Studio Melisa";

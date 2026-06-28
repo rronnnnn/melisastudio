@@ -637,6 +637,18 @@
     </div>
   </div>
 
+  <!-- BOOKING REQUEST CONFIRMATION -->
+  <div class="overlay" id="confirmOverlay">
+    <div class="modal glass" style="max-width:440px;text-align:center;">
+      <div style="font-size:48px;line-height:1;margin-bottom:6px;">🌸</div>
+      <div class="modal-title" data-i18n="confirm_title">Your booking request has been sent!</div>
+      <p style="color:var(--cocoa);margin:14px 0 22px;line-height:1.6;" data-i18n="confirm_msg">Please check your email for confirmation from Studio Melisa.</p>
+      <div class="nav" style="justify-content:center;">
+        <button class="btn btn-primary" id="confirmCloseBtn" data-i18n="confirm_close">Done</button>
+      </div>
+    </div>
+  </div>
+
   <!--
     blocked_hours.service migration (run once in Supabase):
     ALTER TABLE blocked_hours ADD COLUMN service text DEFAULT NULL;
@@ -838,7 +850,10 @@ const I18N = {
     sum_services:"Shërbimet", sum_styles:"Stilet",
     h_browservice:"Çfarë ju nevojitet?", h_browcolor:"A dëshironi ngjyrosje?",
     brow_cleaning:"Pastrim", brow_lifting:"Lifting",
-    ans_yes:"Po", ans_no:"Jo", sum_coloring:"Ngjyrosje"
+    ans_yes:"Po", ans_no:"Jo", sum_coloring:"Ngjyrosje",
+    confirm_title:"Kërkesa juaj për rezervim u dërgua!",
+    confirm_msg:"Ju lutemi kontrolloni email-in tuaj për konfirmim nga Studio Melisa.",
+    confirm_close:"Në rregull"
   },
   en: {
     tagline:"Nails · Brows · Lip Blush",
@@ -868,7 +883,10 @@ const I18N = {
     sum_services:"Services", sum_styles:"Styles",
     h_browservice:"What do you need?", h_browcolor:"Would you like coloring?",
     brow_cleaning:"Cleaning", brow_lifting:"Lifting",
-    ans_yes:"Yes", ans_no:"No", sum_coloring:"Coloring"
+    ans_yes:"Yes", ans_no:"No", sum_coloring:"Coloring",
+    confirm_title:"Your booking request has been sent!",
+    confirm_msg:"Please check your email for confirmation from Studio Melisa.",
+    confirm_close:"Done"
   },
   mk: {
     tagline:"Нокти · Веѓи · Lip Blush",
@@ -898,7 +916,10 @@ const I18N = {
     sum_services:"Услуги", sum_styles:"Стилови",
     h_browservice:"Што ви треба?", h_browcolor:"Дали сакате боење?",
     brow_cleaning:"Чистење", brow_lifting:"Лифтинг",
-    ans_yes:"Да", ans_no:"Не", sum_coloring:"Боење"
+    ans_yes:"Да", ans_no:"Не", sum_coloring:"Боење",
+    confirm_title:"Вашето барање за резервација е испратено!",
+    confirm_msg:"Ве молиме проверете ја вашата е-пошта за потврда од Studio Melisa.",
+    confirm_close:"Во ред"
   }
 };
 
@@ -1321,6 +1342,22 @@ async function sendCancellationNotice(booking, svcLabel, prettyDate){
   }
 }
 
+// Notify the studio (STUDIO_EMAIL / pedicure worker) of a new booking request.
+async function sendRequestNotice(booking){
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/send-booking-email`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${SUPABASE_ANON}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ booking, newStatus: "request", services: SERVICES }),
+  });
+  if(!res.ok){
+    const txt = await res.text().catch(()=> '');
+    throw new Error('Request notification failed '+res.status+': '+txt);
+  }
+}
+
 /* ============================================================
    BOOKING FLOW
    ============================================================ */
@@ -1673,7 +1710,7 @@ function renderSummary(){
     '<div class="sum-row"><span class="k">'+r[0]+'</span><span class="v">'+r[1]+'</span></div>').join('');
 }
 
-/* ---- confirm: save booking to Supabase, then open the user's email client ---- */
+/* ---- confirm: save booking to Supabase, then notify the studio by email ---- */
 $('emailBtn').addEventListener('click', async ()=>{
   const btn = $('emailBtn');
   btn.disabled = true;
@@ -1708,38 +1745,52 @@ $('emailBtn').addEventListener('click', async ()=>{
     duration_minutes: duration
   };
 
+  let saved = null;
   try {
     // Insert and read the row back so we capture the DB-generated cancel_token.
     // The token travels with the booking and is later used to build the
     // cancellation link in the approval email (sent on approve).
-    const { data: saved, error } = await sb
+    const { data, error } = await sb
       .from('bookings').insert(bookingData).select().single();
     if(error) throw error;
+    saved = data;
     if(saved) console.log('Booking saved with cancel_token:', saved.cancel_token);
   } catch(e){
     console.error('Could not save booking:', e);
-    // Still open the email client — don't block the user
+    // Don't block the user — still notify the studio and confirm below.
   }
 
-  // mirror the review screen's time (eyebrows shows a start–end range).
+  // Notify the studio (Melisa) of the new request via the edge function.
+  // Eyebrows shows a start–end range; other flows show the start time.
   // Display-only +1 to match renderSummary's dispDur (stored duration_minutes stays raw).
   const timeVal = state.service==='eyebrows' ? fmtTimeRange(state.time, duration+1) : state.time;
-  const name = $('fName').value.trim()+' '+$('fSurname').value.trim();
-  const subject = 'Booking Request — Studio Melisa';
-  const body =
-    t('sum_service')+': '+svcTitle(state.service)+'\n'+
-    t('sum_name')+': '+name+'\n'+
-    t('sum_date')+': '+fmtDate(state.date)+'\n'+
-    t('sum_time')+': '+timeVal;
-  window.location.href = 'mailto:bekteshimelisa@gmail.com'
-    +'?subject='+encodeURIComponent(subject)
-    +'&body='+encodeURIComponent(body);
+  try {
+    await sendRequestNotice({ ...(saved || bookingData), date: fmtDate(state.date), time: timeVal });
+  } catch(e){
+    console.error('Studio notification failed:', e);
+  }
 
   btn.disabled = false;
   btn.textContent = t('btn_email');
+  showConfirmation();
 });
 
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeBooking(); closeHoursPanel(); } });
+/* ---- booking request confirmation modal ---- */
+function showConfirmation(){
+  closeBooking();
+  $('confirmOverlay').classList.add('show');
+  document.documentElement.style.overflow='hidden';
+  document.body.style.overflow='hidden';
+}
+function closeConfirmation(){
+  $('confirmOverlay').classList.remove('show');
+  document.documentElement.style.overflow='';
+  document.body.style.overflow='';
+}
+$('confirmCloseBtn').addEventListener('click', closeConfirmation);
+$('confirmOverlay').addEventListener('click', e=>{ if(e.target===$('confirmOverlay')) closeConfirmation(); });
+
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeBooking(); closeHoursPanel(); closeConfirmation(); } });
 
 /* ============================================================
    ADMIN PANEL
