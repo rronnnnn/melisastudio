@@ -2114,12 +2114,12 @@ async function renderBlockCalendar(){
     // first and open the panel — making "double-click to block" look broken.
     // The timer is a per-iteration closure var, so clicks on other days can't
     // collide with a pending click here.
+    // Both admin roles can block days: toggleBlockedDay routes by role
+    // (main admin → service NULL, pedicure worker → service 'pedicure').
     let dayClickTimer = null;
     btn.addEventListener('click',()=>{
       if(dayClickTimer){                        // second click on this day → double-click
         clearTimeout(dayClickTimer); dayClickTimer=null;
-        if(adminRole === 'pedicure') return;    // pedicure worker: double-click is a no-op
-        console.log('[BlockDays] double-click → toggle', ds, 'currentlyBlocked=', adminBlocked.has(ds));
         toggleBlockedDay(ds, adminBlocked.has(ds));
         return;
       }
