@@ -152,13 +152,8 @@
   /* blocked day (admin) = distinct red so Melisa can clearly see which days she has blocked */
   .day.blocked{background:#FDECEA;color:#C0392B;opacity:1;}
 
-  /* admin block-days full-year view: scrollable grid of 12 month cards */
-  .cal-year{max-height:62vh;overflow-y:auto;display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:22px 18px;padding:4px 6px 4px 2px;}
-  .cal-month-block .cal-month-name{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;
-    text-align:center;margin-bottom:8px;color:var(--espresso);}
-  .cal-year .cal-grid{gap:4px;}
-  .cal-year .day{font-size:12.5px;border-radius:10px;}
+  /* block-days toggle button turns red while the picked date is fully blocked */
+  #blkDayToggle.is-blocked{background:#FDECEA;color:#C0392B;}
 
   /* admin block-hours panel (single-click a day) */
   .hours-modal{max-width:440px;}
@@ -459,11 +454,11 @@
       <div id="adminBlockDays">
         <div class="admin-section-title">Block Days</div>
         <div class="glass" style="padding:20px 22px;margin-bottom:24px;">
-          <div class="cal-head">
-            <div class="cal-month" id="blkYearLabel"></div>
+          <div class="admin-datefilter" style="margin-bottom:0;">
+            <input type="date" id="blkDayInput">
+            <button class="filter-btn" id="blkDayToggle">Block Day</button>
           </div>
-          <div class="cal-year" id="blkYearGrid"></div>
-          <div style="font-size:12.5px;color:var(--cocoa);margin-top:10px;">Single tap a day to set its blocked hours. Double tap a day to block (or unblock) the whole day.</div>
+          <div style="font-size:12.5px;color:var(--cocoa);margin-top:10px;">Pick a date to set its blocked hours. Use the button to block (or unblock) the whole day.</div>
         </div>
       </div>
 
@@ -1514,16 +1509,34 @@ $('prevM').addEventListener('click',()=>{ shiftMonth(-1); });
 $('nextM').addEventListener('click',()=>{ shiftMonth(1); });
 function shiftMonth(d){ state.calDate.setMonth(state.calDate.getMonth()+d); renderCalendar(); }
 
-/* blocked days shared by customer calendar (Set of 'YYYY-MM-DD' strings) */
-let blockedDates = new Set();
+/* blocked days shared by customer calendar (Sets of 'YYYY-MM-DD' strings).
+   service IS NULL blocks every non-pedicure service; service = 'pedicure'
+   blocks pedicure only. We fetch both and decide per booking which apply. */
+let blockedNullDates = new Set();
+let blockedPedicureDates = new Set();
 async function fetchBlockedDays(){
   try {
-    const { data, error } = await sb.from('blocked_days').select('date');
+    const { data, error } = await sb.from('blocked_days')
+      .select('date, service')
+      .or('service.is.null,service.eq.pedicure');
     if(error) throw error;
-    blockedDates = new Set((data||[]).map(r=>r.date));
+    blockedNullDates = new Set();
+    blockedPedicureDates = new Set();
+    (data||[]).forEach(r=>{
+      if(r.service === null) blockedNullDates.add(r.date);
+      else if(r.service === 'pedicure') blockedPedicureDates.add(r.date);
+    });
   } catch(e){
     console.error('Could not load blocked days:', e);
   }
+}
+
+// A day is blocked for the customer when the service they're booking is affected:
+// null-service blocks block everyone; pedicure-only blocks block pedicure bookings.
+function isDayBlockedForCustomer(ds){
+  if(blockedNullDates.has(ds)) return true;
+  if(state.service === 'pedicure' && blockedPedicureDates.has(ds)) return true;
+  return false;
 }
 
 async function renderCalendar(){
@@ -1544,7 +1557,7 @@ async function renderCalendar(){
     const btn=document.createElement('button'); btn.className='day'; btn.textContent=d;
     const date=new Date(y,m,d);
     if(date<today){ btn.disabled=true; }
-    if(blockedDates.has(dateStr(date))){
+    if(isDayBlockedForCustomer(dateStr(date))){
       btn.disabled=true;
       btn.style.cssText='opacity:.28; cursor:not-allowed;';
       grid.appendChild(btn);
@@ -1838,6 +1851,21 @@ function initAdmin(){
     loadAdminBookings();
   });
 
+  // Block Days date picker: choosing a date opens its hours panel; the toggle
+  // button blocks/unblocks the whole picked day (both admin roles).
+  $('blkDayInput').addEventListener('change', e=>{
+    const ds = e.target.value;
+    updateBlkDayToggle();
+    if(!ds) return;
+    const [y,mo,d] = ds.split('-').map(Number);
+    openHoursPanel(new Date(y, mo-1, d));   // local date — avoids UTC day-shift
+  });
+  $('blkDayToggle').addEventListener('click', ()=>{
+    const ds = $('blkDayInput').value;
+    if(!ds) return;
+    toggleBlockedDay(ds, adminBlocked.has(ds));
+  });
+
   // Restore an existing session (role kept in sessionStorage)
   const savedRole = sessionStorage.getItem('melisaAdminRole');
   if(savedRole === 'main' || savedRole === 'pedicure'){
@@ -1872,6 +1900,7 @@ function enterAdmin(){
   $('adminLogin').style.display='none';
   $('adminBookings').style.display='block';
   $('adminBlockDays').style.display='';
+  if(!$('blkDayInput').value) $('blkDayInput').value = dateStr(new Date());
   renderBlockCalendar();
   loadAdminBookings();
 }
@@ -2041,7 +2070,11 @@ function escHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&l
    ============================================================ */
 async function fetchBlockedDaysAdmin(){
   try {
-    const { data, error } = await sb.from('blocked_days').select('date');
+    // Each admin only sees/toggles its own blocked days: main admin owns the
+    // service-NULL rows; the pedicure worker owns the service='pedicure' rows.
+    let q = sb.from('blocked_days').select('date');
+    q = adminRole === 'pedicure' ? q.eq('service', 'pedicure') : q.is('service', null);
+    const { data, error } = await q;
     if(error) throw error;
     adminBlocked = new Set((data||[]).map(r=>r.date));
   } catch(e){
@@ -2049,68 +2082,35 @@ async function fetchBlockedDaysAdmin(){
   }
 }
 
-// Full-year view: render all 12 months of the current year in a scrollable grid.
+// Block Days uses a simple date picker: load the current blocked days, then
+// reflect whether the picked date is blocked on the Block/Unblock toggle button.
 async function renderBlockCalendar(){
-  const today=new Date(); today.setHours(0,0,0,0);
-  const year=today.getFullYear();
-  $('blkYearLabel').textContent = year;
-
   await fetchBlockedDaysAdmin();
-
-  const yearGrid=$('blkYearGrid'); yearGrid.innerHTML='';
-  for(let m=0;m<12;m++){
-    yearGrid.appendChild(buildBlockMonth(year, m, today));
-  }
+  updateBlkDayToggle();
 }
 
-// Build one month card (label + 7-column day grid) for the year view.
-// Single click opens the hours panel; double click toggles the whole day blocked.
-function buildBlockMonth(y, m, today){
-  const block=document.createElement('div'); block.className='cal-month-block';
-  const name=document.createElement('div'); name.className='cal-month-name';
-  name.textContent=MONTHS[m]; block.appendChild(name);
-
-  const grid=document.createElement('div'); grid.className='cal-grid';
-  WD.forEach(w=>{ const e=document.createElement('div'); e.className='wd'; e.textContent=w; grid.appendChild(e); });
-  let first=new Date(y,m,1).getDay(); first=(first+6)%7;
-  const days=new Date(y,m+1,0).getDate();
-  for(let i=0;i<first;i++){ const e=document.createElement('div'); e.className='day empty'; grid.appendChild(e); }
-  for(let d=1;d<=days;d++){
-    const btn=document.createElement('button'); btn.className='day'; btn.textContent=d;
-    const date=new Date(y,m,d);
-    const ds=dateStr(date);
-    if(date<today){ btn.disabled=true; }   // past days: not clickable (single or double)
-    const isBlocked=adminBlocked.has(ds);
-    if(isBlocked){
-      btn.classList.add('blocked');
-    }
-    // single click → open the working-hours panel for that day;
-    // double click → toggle the whole day as blocked. A short timer
-    // distinguishes the two so a double click doesn't also open the panel.
-    let clickTimer=null;
-    btn.addEventListener('click',()=>{
-      if(clickTimer) return;             // second click of a dbl — let dblclick handle it
-      clickTimer=setTimeout(()=>{ clickTimer=null; openHoursPanel(date); }, 250);
-    });
-    btn.addEventListener('dblclick',()=>{
-      if(clickTimer){ clearTimeout(clickTimer); clickTimer=null; }
-      // Pedicure worker can only block hours, not whole days — skip the day toggle.
-      if(adminRole === 'pedicure') return;
-      toggleBlockedDay(ds, isBlocked);
-    });
-    grid.appendChild(btn);
-  }
-  block.appendChild(grid);
-  return block;
+// Update the Block/Unblock Day button label + style for the currently picked date.
+function updateBlkDayToggle(){
+  const ds = $('blkDayInput').value;
+  const btn = $('blkDayToggle');
+  const isBlocked = !!ds && adminBlocked.has(ds);
+  btn.disabled = !ds;
+  btn.textContent = isBlocked ? 'Unblock Day' : 'Block Day';
+  btn.classList.toggle('is-blocked', isBlocked);
 }
 
 async function toggleBlockedDay(ds, isBlocked){
+  // main admin blocks all non-pedicure services (service NULL); the pedicure
+  // worker blocks pedicure only (service = 'pedicure').
+  const svc = adminRole === 'pedicure' ? 'pedicure' : null;
   try {
     if(isBlocked){
-      const { error } = await sb.from('blocked_days').delete().eq('date', ds);
+      let del = sb.from('blocked_days').delete().eq('date', ds);
+      del = svc === null ? del.is('service', null) : del.eq('service', svc);
+      const { error } = await del;
       if(error) throw error;
     } else {
-      const { error } = await sb.from('blocked_days').insert({ date: ds });
+      const { error } = await sb.from('blocked_days').insert({ date: ds, service: svc });
       if(error) throw error;
     }
     showDayToast(isBlocked ? 'Day unblocked ✓' : 'Day blocked ✓');
