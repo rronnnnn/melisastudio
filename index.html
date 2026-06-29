@@ -1531,12 +1531,13 @@ async function fetchBlockedDays(){
   }
 }
 
-// A day is blocked for the customer when the service they're booking is affected:
-// null-service blocks block everyone; pedicure-only blocks block pedicure bookings.
+// A day is blocked for the customer only when the service they're booking is
+// affected. Pedicure and non-pedicure are separate workers with separate blocks:
+//   service = 'pedicure' blocks  → only pedicure bookings
+//   service = NULL blocks        → only non-pedicure bookings (manicure/eyebrows/lipblush)
 function isDayBlockedForCustomer(ds){
-  if(blockedNullDates.has(ds)) return true;
-  if(state.service === 'pedicure' && blockedPedicureDates.has(ds)) return true;
-  return false;
+  if(state.service === 'pedicure') return blockedPedicureDates.has(ds);
+  return blockedNullDates.has(ds);
 }
 
 async function renderCalendar(){
