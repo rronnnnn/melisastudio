@@ -1371,7 +1371,8 @@ document.querySelectorAll('.card').forEach(c=>{
   });
 });
 $('closeBtn').addEventListener('click',closeBooking);
-overlay.addEventListener('click',e=>{ if(e.target===overlay) closeBooking(); });
+// Clicking the blurred backdrop must do nothing — the modal closes only via its
+// own close button. (Background content is also pointer-events:none, see CSS.)
 
 /* ---- lip blush disclaimer ---- */
 const lipOverlay = $('lipOverlay');
