@@ -101,6 +101,8 @@
   .overlay{position:fixed;inset:0;z-index:50;display:none;align-items:flex-start;justify-content:center;
     padding:28px 16px;overflow-y:auto;background:rgba(120,92,70,.28);backdrop-filter:blur(6px);}
   .overlay.show{display:flex;}
+  /* While the booking modal is open, make the blurred background unclickable. */
+  body.booking-open #mainSite, body.booking-open #adminPanel{pointer-events:none;}
   .modal{width:100%;max-width:560px;margin:auto;padding:30px 28px 26px;}
   .modal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
   .modal-title{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:600;color:var(--espresso);}
@@ -605,14 +607,14 @@
 
       <!-- REVIEW -->
       <div class="step" data-stepkey="review">
+        <div class="done-ico">&#127800;</div>
+        <h4 style="text-align:center" data-i18n="h_review">Review your booking</h4>
+        <div class="summary" id="summary"></div>
         <!-- Deposit disclaimer — shown only for manicure & pedicure (toggled in goStep) -->
         <div class="notice" id="depositNotice">
           <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
           <span data-i18n="deposit_disclaimer">To confirm your booking, the deposit must be paid at least 7 days before the appointment. If the deposit is not paid within this period, the booking will be automatically cancelled and the slot will be released for other clients.</span>
         </div>
-        <div class="done-ico">&#127800;</div>
-        <h4 style="text-align:center" data-i18n="h_review">Review your booking</h4>
-        <div class="summary" id="summary"></div>
         <div class="nav">
           <button class="btn btn-ghost" data-back data-i18n="btn_back">Back</button>
         </div>
@@ -1437,6 +1439,7 @@ function openBooking(svc){
   document.querySelectorAll('#fName,#fSurname,#fEmail,#fPhone').forEach(i=>i.value='');
   goStep('contact');
   overlay.classList.add('show');
+  document.body.classList.add('booking-open');
   // Scroll-lock the page behind the modal. The viewport scrolls on <html>
   // (body's overflow-x:hidden makes its own overflow-y computed scrollable),
   // so we must lock the documentElement too, not just <body>.
@@ -1445,6 +1448,7 @@ function openBooking(svc){
 }
 function closeBooking(){
   overlay.classList.remove('show');
+  document.body.classList.remove('booking-open');
   document.documentElement.style.overflow='';
   document.body.style.overflow='';
 }
