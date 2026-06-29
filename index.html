@@ -1819,7 +1819,6 @@ let adminDateFilter = null;   // 'YYYY-MM-DD' or null for all dates
 let adminRole = null;         // 'main' (full admin) or 'pedicure' (pedicure worker)
 let adminBlocked = new Set();          // 'YYYY-MM-DD' strings
 let blockCalDate = null;               // first-of-month date shown in the Block Days calendar
-let blkClickTimer = null;              // distinguishes single- vs double-click on a Block Days cell
 let adminBlockedHours = new Set();     // 'HH:MM' strings blocked for the selected date
 let blkHoursDate = new Date();         // date currently shown in the Block Hours panel
 const BLK_CLOSE_MIN = 22*60;           // Block Hours grid runs 08:00–22:00 (last slot 21:30)
@@ -2106,16 +2105,25 @@ async function renderBlockCalendar(){
     const btn=document.createElement('button'); btn.className='day'; btn.textContent=d;
     if(date<today){ btn.disabled=true; grid.appendChild(btn); continue; }
     if(adminBlocked.has(ds)) btn.classList.add('blocked');
-    // A double-click also fires two click events, so defer the single-click
-    // action briefly and cancel it when a double-click arrives.
+    // Single- vs double-click discrimination, done ourselves rather than via the
+    // native `dblclick` event: a short timer holds the single-click action (open
+    // the hours panel); a second click on the SAME day inside the window cancels
+    // it and toggles the whole day instead. The native `dblclick` only fires when
+    // both clicks land inside the OS double-click interval (often 400–500ms), so
+    // a slightly-slow double-click used to let the 250ms single-click timer fire
+    // first and open the panel — making "double-click to block" look broken.
+    // The timer is a per-iteration closure var, so clicks on other days can't
+    // collide with a pending click here.
+    let dayClickTimer = null;
     btn.addEventListener('click',()=>{
-      if(blkClickTimer) return;
-      blkClickTimer=setTimeout(()=>{ blkClickTimer=null; openHoursPanel(date); }, 250);
-    });
-    btn.addEventListener('dblclick',()=>{
-      if(blkClickTimer){ clearTimeout(blkClickTimer); blkClickTimer=null; }
-      if(adminRole === 'pedicure') return;   // pedicure worker: double-click is a no-op
-      toggleBlockedDay(ds, adminBlocked.has(ds));
+      if(dayClickTimer){                        // second click on this day → double-click
+        clearTimeout(dayClickTimer); dayClickTimer=null;
+        if(adminRole === 'pedicure') return;    // pedicure worker: double-click is a no-op
+        console.log('[BlockDays] double-click → toggle', ds, 'currentlyBlocked=', adminBlocked.has(ds));
+        toggleBlockedDay(ds, adminBlocked.has(ds));
+        return;
+      }
+      dayClickTimer=setTimeout(()=>{ dayClickTimer=null; openHoursPanel(date); }, 300);
     });
     grid.appendChild(btn);
   }
