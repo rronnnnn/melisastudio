@@ -2283,14 +2283,20 @@ async function toggleBlockedHour(time, isBlocked){
   const ds=dateStr(blkHoursDate);
   // '' (All Services) is stored as NULL; a specific filter stores its service id.
   const svc = hoursFilterService === '' ? null : hoursFilterService;
+  // For All Services (NULL), a 30-min slot expands to its three 15-min sub-slots
+  // (e.g. 8:00 -> 8:00, 8:15, 8:30). Specific services keep single-slot behaviour.
+  const times = svc === null
+    ? [0, 15, 30].map(off => fmtMin(toMin(time) + off))
+    : [time];
   try {
     if(isBlocked){
-      let del = sb.from('blocked_hours').delete().eq('date', ds).eq('time', time);
+      let del = sb.from('blocked_hours').delete().eq('date', ds).in('time', times);
       del = svc === null ? del.is('service', null) : del.eq('service', svc);
       const { error } = await del;
       if(error) throw error;
     } else {
-      const { error } = await sb.from('blocked_hours').insert({ date: ds, time, service: svc });
+      const rows = times.map(t => ({ date: ds, time: t, service: svc }));
+      const { error } = await sb.from('blocked_hours').insert(rows);
       if(error) throw error;
     }
   } catch(e){
