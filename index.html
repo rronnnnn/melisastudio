@@ -1653,8 +1653,12 @@ function renderSlots(bookings){
     btn.className='slot'; btn.textContent=label;
 
     const status = slotStatus(min, dur, bookings);
-    // a manually blocked hour disables only the slot with the exact same time
-    const isBlockedHour = blockedHoursForDay.has(label);
+    // a slot is blocked if any admin-blocked sub-slot falls within [min, min+step)
+    let isBlockedHour = false;
+    for(const bh of blockedHoursForDay){
+      const bhMin = toMin(bh);
+      if(bhMin >= min && bhMin < min+step){ isBlockedHour = true; break; }
+    }
 
     if(isToday && min <= nowMin){
       btn.disabled=true;
