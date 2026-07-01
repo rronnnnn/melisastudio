@@ -1653,8 +1653,8 @@ function renderSlots(bookings){
     btn.className='slot'; btn.textContent=label;
 
     const status = slotStatus(min, dur, bookings);
-    // a manually blocked hour behaves like a 30-min booking the slot can't overlap
-    const isBlockedHour = [...blockedHoursForDay].some(bt=>overlaps(min, dur, toMin(bt), 30));
+    // a manually blocked hour disables only the slot with the exact same time
+    const isBlockedHour = blockedHoursForDay.has(label);
 
     if(isToday && min <= nowMin){
       btn.disabled=true;
