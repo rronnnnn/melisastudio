@@ -1653,12 +1653,7 @@ function renderSlots(bookings){
     btn.className='slot'; btn.textContent=label;
 
     const status = slotStatus(min, dur, bookings);
-    // a slot is blocked if any admin-blocked sub-slot falls within [min, min+step)
-    let isBlockedHour = false;
-    for(const bh of blockedHoursForDay){
-      const bhMin = toMin(bh);
-      if(bhMin >= min && bhMin < min+step){ isBlockedHour = true; break; }
-    }
+    const isBlockedHour = blockedHoursForDay.has(label);
 
     if(isToday && min <= nowMin){
       btn.disabled=true;
@@ -2247,9 +2242,9 @@ async function renderBlockHours(){
   await Promise.all([fetchBlockedHoursAdmin(), fetchBookingsForDayAdmin()]);
 
   const grid=$('hoursPanelGrid'); grid.innerHTML='';
-  // eyebrows uses its finer interval (15 min) from SERVICES; all other services stay at 30 min
-  const hoursStep = hoursFilterService === 'eyebrows'
-    ? (SERVICES.eyebrows.interval || 30)
+  // eyebrows and All Services use the finer 15-min interval; other services stay at 30 min
+  const hoursStep = (hoursFilterService === 'eyebrows' || hoursFilterService === '')
+    ? (SERVICES.eyebrows.interval || 15)
     : 30;
   // Worker-group filter — mirror the customer slot picker (loadAndRenderSlots):
   // Manicure/Eyebrows/Lip Blush share a worker and cross-block; Pedicure is
@@ -2287,20 +2282,14 @@ async function toggleBlockedHour(time, isBlocked){
   const ds=dateStr(blkHoursDate);
   // '' (All Services) is stored as NULL; a specific filter stores its service id.
   const svc = hoursFilterService === '' ? null : hoursFilterService;
-  // For All Services (NULL), a 30-min slot expands to its three 15-min sub-slots
-  // (e.g. 8:00 -> 8:00, 8:15, 8:30). Specific services keep single-slot behaviour.
-  const times = svc === null
-    ? [0, 15, 30].map(off => fmtMin(toMin(time) + off))
-    : [time];
   try {
     if(isBlocked){
-      let del = sb.from('blocked_hours').delete().eq('date', ds).in('time', times);
+      let del = sb.from('blocked_hours').delete().eq('date', ds).eq('time', time);
       del = svc === null ? del.is('service', null) : del.eq('service', svc);
       const { error } = await del;
       if(error) throw error;
     } else {
-      const rows = times.map(t => ({ date: ds, time: t, service: svc }));
-      const { error } = await sb.from('blocked_hours').insert(rows);
+      const { error } = await sb.from('blocked_hours').insert({ date: ds, time, service: svc });
       if(error) throw error;
     }
   } catch(e){
