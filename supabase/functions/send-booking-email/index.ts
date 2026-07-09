@@ -68,6 +68,26 @@ Deno.serve(async (req) => {
   <p><strong>Customer:</strong> ${booking.name}<br><strong>Phone:</strong> ${booking.phone}<br><strong>Email:</strong> ${booking.email}<br><strong>Service:</strong> ${svcLabel}<br><strong>Date:</strong> ${booking.date}<br><strong>Time:</strong> ${booking.time}${booking.options ? `<br><strong>Options:</strong> ${booking.options}` : ""}</p>
   <p>Please review and approve or reject it in the admin panel.</p>
 </div>`;
+  } else if (newStatus === "freed") {
+    // Customer notification when the studio frees a previously held/booked slot.
+    to = booking.email;
+    subject = "Your appointment has been cancelled — Studio Melisa";
+    html = `<div style="font-family:Arial,sans-serif;color:#5A4636;line-height:1.6;">
+  <p>Hi ${booking.name},</p>
+  <p>We're sorry to let you know that your appointment for <strong>${svcLabel}</strong> on <strong>${booking.date}</strong> at <strong>${booking.time}</strong> has been cancelled by the studio.</p>
+  <p>We know this is disappointing, and we sincerely apologize for the inconvenience. We'd love to have you back — please feel free to rebook a time that works for you at <a href="https://studiomelisa.com" style="color:#9A7A60;">studiomelisa.com</a>.</p>
+  <p>With warm wishes,<br>— Studio Melisa</p>
+</div>`;
+  } else if (newStatus === "pending_confirmation") {
+    // Customer notification sent immediately after a booking request is submitted.
+    to = booking.email;
+    subject = "We received your booking request — Studio Melisa";
+    html = `<div style="font-family:Arial,sans-serif;color:#5A4636;line-height:1.6;">
+  <p>Hi ${booking.name},</p>
+  <p>Thank you for your booking request at <strong>Studio Melisa</strong>! We've received your request for <strong>${svcLabel}</strong> on <strong>${booking.date}</strong> at <strong>${booking.time}</strong>.</p>
+  <p>Please hold tight — we'll send you an approval or rejection email shortly. 🌸</p>
+  <p>With warm wishes,<br>— Studio Melisa</p>
+</div>`;
   } else {
     to = booking.email;
     subject = "About your booking — Studio Melisa";

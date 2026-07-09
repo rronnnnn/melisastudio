@@ -1793,6 +1793,16 @@ $('emailBtn').addEventListener('click', async ()=>{
     console.error('Studio notification failed:', e);
   }
 
+  // Let the customer know their request was received while they wait for approval.
+  const emailTarget = saved || bookingData;
+  if(emailTarget && emailTarget.email){
+    try {
+      await sendBookingEmail({ ...emailTarget, date: fmtDate(state.date), time: timeVal }, 'pending_confirmation');
+    } catch(e){
+      console.error('Customer notification failed:', e);
+    }
+  }
+
   btn.disabled = false;
   btn.textContent = t('btn_email');
   showConfirmation();
@@ -2006,8 +2016,23 @@ async function freeSlot(id){
   if(card){ card.style.opacity='0.5'; card.style.pointerEvents='none'; }
 
   try {
+    // Fetch the full row first so we still have the booking data to email
+    // the customer with after it's deleted.
+    const { data: booking, error: fErr } = await sb
+      .from('bookings').select('*').eq('id', id).single();
+    if(fErr) throw fErr;
+
     const { error } = await sb.from('bookings').delete().eq('id', id);
     if(error) throw error;
+
+    if(booking && booking.email){
+      try {
+        await sendBookingEmail(booking, 'freed');
+      } catch(emailErr){
+        console.error('Email notification failed:', emailErr);
+      }
+    }
+
     await loadAdminBookings();
   } catch(e){
     console.error(e);
