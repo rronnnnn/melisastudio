@@ -2011,6 +2011,7 @@ async function updateBooking(id, newStatus){
 }
 
 async function freeSlot(id){
+  console.log('freeSlot called with id:', id);
   if(!confirm('Are you sure you want to remove this booking and free the slot?')) return;
   const card = document.getElementById('card-'+id);
   if(card){ card.style.opacity='0.5'; card.style.pointerEvents='none'; }
@@ -2021,16 +2022,20 @@ async function freeSlot(id){
     const { data: booking, error: fErr } = await sb
       .from('bookings').select('*').eq('id', id).single();
     if(fErr) throw fErr;
+    console.log('freeSlot fetched booking:', booking);
 
     const { error } = await sb.from('bookings').delete().eq('id', id);
     if(error) throw error;
 
     if(booking && booking.email){
+      console.log('freeSlot calling sendBookingEmail with:', booking, 'freed');
       try {
         await sendBookingEmail(booking, 'freed');
       } catch(emailErr){
         console.error('Email notification failed:', emailErr);
       }
+    } else {
+      console.log('freeSlot skipped sendBookingEmail — booking or booking.email missing:', booking);
     }
 
     await loadAdminBookings();
