@@ -1466,11 +1466,11 @@ function goStep(key){
   const seq=getSequence();
   document.querySelectorAll('.step').forEach(s=>s.classList.toggle('show', s.dataset.stepkey===key));
   renderDots(seq, key);
+  if(key==='date') renderCalendar();
   if(key==='time') loadAndRenderSlots();
   if(key==='review'){
     renderSummary();
-    // Deposit disclaimer applies to manicure & pedicure only.
-    $('depositNotice').classList.toggle('show', MULTISTEP_SERVICES.includes(state.service));
+    $('depositNotice').classList.add('show');
   }
 }
 
@@ -1544,14 +1544,68 @@ function isDayBlockedForCustomer(ds){
   return blockedNullDates.has(ds);
 }
 
+/* full-day availability for the calendar grid: a day with no bookable slot
+   left (all taken by approved/pending bookings or admin-blocked hours) is
+   greyed out just like a blocked/past day. Recomputed every time the
+   calendar renders, so a freed slot makes the day selectable again. */
+async function fetchMonthAvailability(y, m){
+  const startStr = dateStr(new Date(y, m, 1));
+  const endStr = dateStr(new Date(y, m+1, 0));
+  const servicesToCheck = SHARED_WORKER_SERVICES.includes(state.service)
+    ? SHARED_WORKER_SERVICES : [state.service];
+
+  const bookingsByDate = {};
+  const blockedHoursByDate = {};
+  try {
+    const { data: bookings, error } = await sb
+      .from('bookings')
+      .select('date, time, status, service, duration_minutes')
+      .gte('date', startStr).lte('date', endStr)
+      .in('service', servicesToCheck)
+      .in('status', ['pending','approved']);
+    if(error) throw error;
+    (bookings||[]).forEach(b=>{ (bookingsByDate[b.date] ||= []).push(b); });
+
+    let bhQuery = sb.from('blocked_hours').select('date, time')
+      .gte('date', startStr).lte('date', endStr);
+    bhQuery = (state.service === 'pedicure')
+      ? bhQuery.eq('service', 'pedicure')
+      : bhQuery.or('service.is.null,service.eq.'+state.service);
+    const { data: bh, error: bhError } = await bhQuery;
+    if(bhError) throw bhError;
+    (bh||[]).forEach(r=>{ (blockedHoursByDate[r.date] ||= new Set()).add(r.time); });
+  } catch(e){
+    console.error('Could not load month availability:', e);
+  }
+  return { bookingsByDate, blockedHoursByDate };
+}
+
+function isDayFullyBooked(date, ds, bookingsByDate, blockedHoursByDate){
+  const dur = currentDuration();
+  const step = (SERVICES[state.service] && SERVICES[state.service].interval) || GRID;
+  const bookings = bookingsByDate[ds] || [];
+  const blockedSet = blockedHoursByDate[ds] || new Set();
+  const now = new Date();
+  const isToday = sameDay(date, now);
+  const nowMin = now.getHours()*60+now.getMinutes();
+
+  for(let min=OPEN_MIN; min<=CLOSE_MIN; min+=step){
+    if(isToday && min <= nowMin) continue;
+    if(blockedSet.has(fmtMin(min))) continue;
+    if(slotStatus(min, dur, bookings)===null) return false;
+  }
+  return true;
+}
+
 async function renderCalendar(){
   const cd=state.calDate, y=cd.getFullYear(), m=cd.getMonth();
   $('calMonth').textContent = MONTHS[m]+' '+y;
   const today=new Date(); today.setHours(0,0,0,0);
   $('prevM').disabled = (y===today.getFullYear() && m===today.getMonth());
 
-  // fetch blocked days for the month being displayed before rendering
+  // fetch blocked days and current booking load for the month before rendering
   await fetchBlockedDays();
+  const { bookingsByDate, blockedHoursByDate } = await fetchMonthAvailability(y, m);
 
   const grid=$('calGrid'); grid.innerHTML='';
   WD.forEach(w=>{ const e=document.createElement('div'); e.className='wd'; e.textContent=w; grid.appendChild(e); });
@@ -1562,7 +1616,8 @@ async function renderCalendar(){
     const btn=document.createElement('button'); btn.className='day'; btn.textContent=d;
     const date=new Date(y,m,d);
     if(date<today){ btn.disabled=true; }
-    if(isDayBlockedForCustomer(dateStr(date))){
+    const ds=dateStr(date);
+    if(isDayBlockedForCustomer(ds) || (date>=today && isDayFullyBooked(date, ds, bookingsByDate, blockedHoursByDate))){
       btn.disabled=true;
       btn.style.cssText='opacity:.28; cursor:not-allowed;';
       grid.appendChild(btn);
