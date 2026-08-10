@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
     subject = "Your appointment has been cancelled — Studio Melisa";
     html = `<div style="font-family:Arial,sans-serif;color:#5A4636;line-height:1.6;">
   <p>Hi ${booking.name},</p>
-  <p>We're sorry to let you know that your appointment for <strong>${svcLabel}</strong> on <strong>${booking.date}</strong> at <strong>${booking.time}</strong> has been cancelled by the studio.</p>
+  <p>We're sorry to inform you that your appointment for <strong>${svcLabel}</strong> on <strong>${booking.date}</strong> at <strong>${booking.time}</strong> has been cancelled because the deposit was not paid in time.</p>
   <p>We know this is disappointing, and we sincerely apologize for the inconvenience. We'd love to have you back — please feel free to rebook a time that works for you at <a href="https://studiomelisa.com" style="color:#9A7A60;">studiomelisa.com</a>.</p>
   <p>With warm wishes,<br>— Studio Melisa</p>
 </div>`;
