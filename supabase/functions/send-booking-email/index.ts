@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
   <p>Hi ${booking.name},</p>
   <p>Wonderful news — your booking at <strong>Studio Melisa</strong> is confirmed! 🌸 We can't wait to see you.</p>
   <p><strong>Service:</strong> ${svcLabel}<br><strong>Date:</strong> ${booking.date}<br><strong>Time:</strong> ${booking.time}</p>
-  <p style="margin:16px 0;padding:14px 16px;border-radius:10px;background:#FBF3EC;border:1px solid #EADBCE;color:#7A5C45;">To confirm your booking, the deposit must be paid at least 7 days before the appointment. If the deposit is not paid within this period, the booking will be automatically cancelled and the slot will be released for other clients.</p>
+  <p style="margin:16px 0;padding:14px 16px;border-radius:10px;background:#FBF3EC;border:1px solid #EADBCE;color:#7A5C45;">⚠️ To confirm your booking, the deposit must be paid at Studio Melisa premises at least 3 days before your appointment. If the deposit is not paid within this period, the booking will be cancelled and the appointment slot will be released for other clients.</p>
   <p>If anything changes, just reply to let us know. See you soon! 💕</p>
   <p>— Studio Melisa</p>${cancelSection}
 </div>`;
