@@ -69,6 +69,17 @@ Deno.serve(async (req) => {
   <p><strong>Customer:</strong> ${booking.name}<br><strong>Phone:</strong> ${booking.phone}<br><strong>Email:</strong> ${booking.email}<br><strong>Service:</strong> ${svcLabel}<br><strong>Date:</strong> ${booking.date}<br><strong>Time:</strong> ${booking.time}${booking.options ? `<br><strong>Options:</strong> ${booking.options}` : ""}</p>
   <p>Please review and approve or reject it in the admin panel.</p>
 </div>`;
+  } else if (newStatus === "admin_cancelled") {
+    // Customer notification when the studio manually cancels their booking
+    // (distinct from "freed", which is specifically for unpaid deposits).
+    to = booking.email;
+    subject = "Your booking has been cancelled — Studio Melisa";
+    html = `<div style="font-family:Arial,sans-serif;color:#5A4636;line-height:1.6;">
+  <p>Hi ${booking.name},</p>
+  <p>Your booking for <strong>${svcLabel}</strong> on <strong>${booking.date}</strong> at <strong>${booking.time}</strong> is cancelled because of personal reasons. We're sorry for any inconvenience.</p>
+  <p>Please check for different booking times at <a href="https://studiomelisa.com" style="color:#9A7A60;">studiomelisa.com</a> — we'd love to still see you. 🌸</p>
+  <p>With warm wishes,<br>— Studio Melisa</p>
+</div>`;
   } else if (newStatus === "freed") {
     // Customer notification when the studio frees a previously held/booked slot.
     to = booking.email;

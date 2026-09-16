@@ -325,6 +325,10 @@
     font-weight:600;font-size:14px;cursor:pointer;background:var(--glass-strong);
     color:var(--cocoa-deep);border:1px solid var(--clay);transition:.2s;}
   .btn-free:hover{background:#fff;}
+  .btn-cancel{flex:1;padding:10px;border:none;border-radius:12px;font-family:'Quicksand',sans-serif;
+    font-weight:600;font-size:14px;cursor:pointer;background:rgba(239,68,68,.1);
+    color:#b91c1c;border:1px solid rgba(239,68,68,.25);transition:.2s;}
+  .btn-cancel:hover{background:rgba(239,68,68,.2);}
 
   .admin-empty{text-align:center;padding:48px 20px;color:var(--cocoa);}
   .admin-empty .ico{font-size:48px;margin-bottom:12px;}
@@ -2016,6 +2020,7 @@ function renderAdminBookings(bookings){
     const freeSlotBtn = (b.status==='pending' || b.status==='approved') ? `
       <div class="booking-actions">
         <button class="btn-free" onclick="freeSlot('${b.id}')">🗑 Free Slot</button>
+        <button class="btn-cancel" onclick="cancelBookingPersonal('${b.id}')">🚫 Cancel Booking</button>
       </div>` : '';
     const actions = approveReject + freeSlotBtn;
     return `
@@ -2098,6 +2103,37 @@ async function freeSlot(id){
     console.error(e);
     if(card){ card.style.opacity='1'; card.style.pointerEvents=''; }
     alert('Could not remove booking. Try again.');
+  }
+}
+
+async function cancelBookingPersonal(id){
+  if(!confirm('Cancel this booking and notify the client it was cancelled for personal reasons?')) return;
+  const card = document.getElementById('card-'+id);
+  if(card){ card.style.opacity='0.5'; card.style.pointerEvents='none'; }
+
+  try {
+    // Fetch the full row first so we still have the booking data to email
+    // the customer with after it's deleted.
+    const { data: booking, error: fErr } = await sb
+      .from('bookings').select('*').eq('id', id).single();
+    if(fErr) throw fErr;
+
+    const { error } = await sb.from('bookings').delete().eq('id', id);
+    if(error) throw error;
+
+    if(booking && booking.email){
+      try {
+        await sendBookingEmail(booking, 'admin_cancelled');
+      } catch(emailErr){
+        console.error('Email notification failed:', emailErr);
+      }
+    }
+
+    await loadAdminBookings();
+  } catch(e){
+    console.error(e);
+    if(card){ card.style.opacity='1'; card.style.pointerEvents=''; }
+    alert('Could not cancel booking. Try again.');
   }
 }
 
