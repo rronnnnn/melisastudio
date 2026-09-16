@@ -1424,10 +1424,12 @@ function openBooking(svc){
     buildSingleSelect('serviceOpts',[{label:'Refill'},{label:'New Set (artificial tips)'}],o=>{
       state.serviceType=o.label; $('errService').textContent='';
     });
-    // Both styles block 59 min (One Color & Design) for manicure and pedicure.
+    // Pedicure: One Color & Design both block 59 min, unchanged.
+    // Manicure: One Color still blocks 59 min; Design and the new
+    // Multidesign option both block 90 min.
     const styleOpts = svc==='pedicure'
       ? [{label:'One Color',dur:59},{label:'Design',dur:59}]
-      : [{label:'One Color',dur:59},{label:'Design',dur:59}];
+      : [{label:'One Color',dur:59},{label:'Design',dur:90},{label:'Multidesign',dur:90}];
     buildSingleSelect('styleOpts',styleOpts,o=>{
       state.style=o.label; state.duration=o.dur; $('errStyle').textContent='';
     });
