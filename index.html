@@ -1569,24 +1569,39 @@ async function fetchMonthAvailability(y, m){
 
   const bookingsByDate = {};
   const blockedHoursByDate = {};
+  // Supabase returns at most 1000 rows per request and silently drops the rest,
+  // so a month with many blocked hours must be read page by page.
+  const fetchAllRows = async (buildQuery) => {
+    const PAGE = 1000;
+    let rows = [];
+    for(let from=0; ; from+=PAGE){
+      const { data, error } = await buildQuery().range(from, from+PAGE-1);
+      if(error) throw error;
+      rows = rows.concat(data || []);
+      if(!data || data.length < PAGE) break;
+    }
+    return rows;
+  };
+
   try {
-    const { data: bookings, error } = await sb
+    const bookings = await fetchAllRows(() => sb
       .from('bookings')
       .select('date, time, status, service, duration_minutes')
       .gte('date', startStr).lte('date', endStr)
       .in('service', servicesToCheck)
-      .in('status', ['pending','approved']);
-    if(error) throw error;
-    (bookings||[]).forEach(b=>{ (bookingsByDate[b.date] ||= []).push(b); });
+      .in('status', ['pending','approved'])
+      .order('id'));
+    bookings.forEach(b=>{ (bookingsByDate[b.date] ||= []).push(b); });
 
-    let bhQuery = sb.from('blocked_hours').select('date, time')
-      .gte('date', startStr).lte('date', endStr);
-    bhQuery = (state.service === 'pedicure')
-      ? bhQuery.eq('service', 'pedicure')
-      : bhQuery.or('service.is.null,service.eq.'+state.service);
-    const { data: bh, error: bhError } = await bhQuery;
-    if(bhError) throw bhError;
-    (bh||[]).forEach(r=>{ (blockedHoursByDate[r.date] ||= new Set()).add(r.time); });
+    const bh = await fetchAllRows(() => {
+      let q = sb.from('blocked_hours').select('date, time')
+        .gte('date', startStr).lte('date', endStr);
+      q = (state.service === 'pedicure')
+        ? q.eq('service', 'pedicure')
+        : q.or('service.is.null,service.eq.'+state.service);
+      return q.order('id');
+    });
+    bh.forEach(r=>{ (blockedHoursByDate[r.date] ||= new Set()).add(r.time); });
   } catch(e){
     console.error('Could not load month availability:', e);
   }
@@ -1915,10 +1930,12 @@ function initAdmin(){
     $('adminLogin').style.display='block';
     $('adminPass').value='';
   });
-  document.querySelectorAll('.admin-filter .filter-btn').forEach(btn=>{
+  // Only the status tabs (data-filter). The Working-hours service tabs share the
+  // .admin-filter class but use data-svc, and must not touch the booking filter.
+  document.querySelectorAll('.admin-filter .filter-btn[data-filter]').forEach(btn=>{
     btn.addEventListener('click',()=>{
       adminFilter = btn.dataset.filter;
-      document.querySelectorAll('.admin-filter .filter-btn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.admin-filter .filter-btn[data-filter]').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       loadAdminBookings();
     });
