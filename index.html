@@ -150,12 +150,13 @@
   .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
   .cal-grid .wd{font-size:11px;text-align:center;color:var(--cocoa);font-weight:600;padding-bottom:4px;letter-spacing:.05em;}
   .day{aspect-ratio:1;border:none;border-radius:14px;background:rgba(255,255,255,.42);color:var(--espresso);
-    font-family:'Quicksand',sans-serif;font-size:14px;cursor:pointer;transition:.2s;}
-  .day:hover:not(:disabled){background:rgba(255,255,255,.85);}
+    font-family:'Quicksand',sans-serif;font-size:14px;cursor:pointer;transition:.2s;
+    touch-action:manipulation;-webkit-tap-highlight-color:transparent;}  /* no double-tap zoom */
+  @media (hover:hover){ .day:hover:not(:disabled):not(.blocked){background:rgba(255,255,255,.85);} }
   .day.empty{background:transparent;cursor:default;}
   .day:disabled{opacity:.28;cursor:not-allowed;}
   /* blocked day (admin) = distinct red so Melisa can clearly see which days she has blocked */
-  .day.blocked{background:#FDECEA;color:#C0392B;opacity:1;}
+  .day.blocked{background:#FDECEA;color:#C0392B;opacity:1;border:2px solid #E0707A;}
 
   /* admin block-hours panel (single-click a day) */
   .hours-modal{max-width:440px;}
