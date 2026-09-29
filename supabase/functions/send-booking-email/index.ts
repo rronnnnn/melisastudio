@@ -34,7 +34,8 @@ type Copy = {
   rejected: { subject: string; body: (c: Ctx) => string; outro: string };
   admin_cancelled: { subject: string; body: (c: Ctx) => string; outro: string };
   freed: { subject: string; body: (c: Ctx) => string; outro: string };
-  pending_confirmation: { subject: string; body: (c: Ctx) => string; outro: string };
+  pending_confirmation: { subject: string; banner: string; bannerSub: string; requested: string;
+    statusL: string; awaiting: string; outro: string };
 };
 
 const COPY: Record<Lang, Copy> = {
@@ -66,9 +67,12 @@ const COPY: Record<Lang, Copy> = {
       outro: `We know this is disappointing, and we sincerely apologize for the inconvenience. We'd love to have you back — please feel free to rebook a time that works for you at <a href="https://studiomelisa.com" style="color:#9A7A60;">studiomelisa.com</a>.`,
     },
     pending_confirmation: {
-      subject: "We received your booking request — Studio Melisa",
-      body: (c) => `Thank you for your booking request at <strong>Studio Melisa</strong>! We've received your request for <strong>${c.svc}</strong> on <strong>${c.date}</strong> at <strong>${c.time}</strong>.`,
-      outro: "Please hold tight — we'll send you an approval or rejection email shortly. 🌸",
+      subject: "Request received — not confirmed yet — Studio Melisa",
+      banner: "⏳ Your booking is not confirmed yet.",
+      bannerSub: "We've received your request and will review it shortly.",
+      requested: "Requested appointment",
+      statusL: "Status", awaiting: "awaiting approval",
+      outro: `You'll get a separate email as soon as it's approved or declined. Your appointment is only confirmed once you receive an email saying "Your booking is confirmed". Please don't come to the studio before then.`,
     },
   },
   sq: {
@@ -99,9 +103,12 @@ const COPY: Record<Lang, Copy> = {
       outro: `E dimë që kjo është zhgënjyese dhe kërkojmë ndjesë të sinqertë për shqetësimin. Do të na pëlqente t'ju kishim përsëri — mund të rezervoni një kohë që ju përshtatet në <a href="https://studiomelisa.com" style="color:#9A7A60;">studiomelisa.com</a>.`,
     },
     pending_confirmation: {
-      subject: "Kërkesa juaj për rezervim u pranua — Studio Melisa",
-      body: (c) => `Faleminderit për kërkesën tuaj për rezervim në <strong>Studio Melisa</strong>! E pranuam kërkesën tuaj për <strong>${c.svc}</strong> më <strong>${c.date}</strong> në orën <strong>${c.time}</strong>.`,
-      outro: "Ju lutemi prisni pak — së shpejti do t'ju dërgojmë një email me miratimin ose refuzimin. 🌸",
+      subject: "Kërkesa u pranua — ende e pakonfirmuar — Studio Melisa",
+      banner: "⏳ Rezervimi juaj ende NUK është konfirmuar.",
+      bannerSub: "E pranuam kërkesën tuaj dhe do ta shqyrtojmë së shpejti.",
+      requested: "Termini i kërkuar",
+      statusL: "Statusi", awaiting: "në pritje të miratimit",
+      outro: `Do t'ju dërgojmë një email të veçantë sapo të miratohet ose të refuzohet. Termini juaj konfirmohet vetëm kur të merrni një email me titullin "Rezervimi juaj është konfirmuar". Ju lutemi mos vini në studio para kësaj.`,
     },
   },
   mk: {
@@ -132,9 +139,12 @@ const COPY: Record<Lang, Copy> = {
       outro: `Знаеме дека ова е разочарувачки и искрено се извинуваме за непријатноста. Со задоволство повторно ќе ве пречекаме — слободно резервирајте термин што ви одговара на <a href="https://studiomelisa.com" style="color:#9A7A60;">studiomelisa.com</a>.`,
     },
     pending_confirmation: {
-      subject: "Го примивме вашето барање за резервација — Studio Melisa",
-      body: (c) => `Ви благодариме за барањето за резервација во <strong>Studio Melisa</strong>! Го примивме вашето барање за <strong>${c.svc}</strong> на <strong>${c.date}</strong> во <strong>${c.time}</strong>.`,
-      outro: "Ве молиме почекајте — наскоро ќе ви испратиме е-пошта за одобрување или одбивање. 🌸",
+      subject: "Барањето е примено — сè уште не е потврдено — Studio Melisa",
+      banner: "⏳ Вашата резервација сè уште НЕ е потврдена.",
+      bannerSub: "Го примивме вашето барање и наскоро ќе го разгледаме.",
+      requested: "Побаран термин",
+      statusL: "Статус", awaiting: "чека одобрување",
+      outro: `Ќе ви испратиме посебна е-пошта штом биде одобрено или одбиено. Вашиот термин е потврден дури кога ќе добиете е-пошта со наслов „Вашата резервација е потврдена“. Ве молиме не доаѓајте во студиото пред тоа.`,
     },
   },
 };
@@ -170,7 +180,21 @@ function customerEmail(lang: Lang, kind: string, c: Ctx): { subject: string; htm
     };
   }
 
-  const K = L[kind as "rejected" | "admin_cancelled" | "freed" | "pending_confirmation"];
+  if (kind === "pending_confirmation") {
+    const P = L.pending_confirmation;
+    // Deliberately unlike the approval email: amber "not confirmed" banner first,
+    // "requested" wording, explicit status line.
+    return {
+      subject: P.subject,
+      html: wrap(`${hi}
+  <p style="margin:16px 0;padding:14px 16px;border-radius:10px;background:#FFF4D6;border:1px solid #F0D48A;color:#7A5A12;"><strong>${P.banner}</strong><br>${P.bannerSub}</p>
+  <p><strong>${P.requested}:</strong><br>${L.service}: ${c.svc}<br>${L.dateL}: ${c.date}<br>${L.timeL}: ${c.time}<br>${P.statusL}: <strong>${P.awaiting}</strong></p>
+  <p>${P.outro}</p>
+  <p>${L.byeWarm}</p>`),
+    };
+  }
+
+  const K = L[kind as "rejected" | "admin_cancelled" | "freed"];
   return {
     subject: K.subject,
     html: wrap(`${hi}
