@@ -2049,7 +2049,7 @@ function renderAdminBookings(bookings){
         <button class="btn-approve" onclick="updateBooking('${b.id}','approved')">✓ Approve</button>
         <button class="btn-reject"  onclick="updateBooking('${b.id}','rejected')">✗ Reject</button>
       </div>` : '';
-    const freeSlotBtn = (b.status==='pending' || b.status==='approved') ? `
+    const freeSlotBtn = b.status==='approved' ? `
       <div class="booking-actions">
         <button class="btn-free" onclick="freeSlot('${b.id}')">🗑 Free Slot</button>
       </div>` : '';
