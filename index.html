@@ -1849,6 +1849,7 @@ $('emailBtn').addEventListener('click', async ()=>{
     email:     $('fEmail').value.trim(),
     options:   optionsText,
     status:    'pending',
+    lang:      currentLang,  // language the customer booked in; drives email language
     // Eyebrows reuses these columns: service_type = brow service, nail_type = coloring answer.
     nail_type: (isMulti || state.service==='eyebrows') ? state.nailType : null,
     service_type: (isMulti || state.service==='eyebrows') ? state.serviceType : null,
@@ -1884,7 +1885,8 @@ $('emailBtn').addEventListener('click', async ()=>{
   const emailTarget = saved || bookingData;
   if(emailTarget && emailTarget.email){
     try {
-      await sendBookingEmail({ ...emailTarget, date: fmtDate(state.date), time: timeVal }, 'pending_confirmation');
+      // ISO date: the edge function localizes it to the customer's language.
+      await sendBookingEmail({ ...emailTarget, date: dateStr(state.date), time: timeVal }, 'pending_confirmation');
     } catch(e){
       console.error('Customer notification failed:', e);
     }
