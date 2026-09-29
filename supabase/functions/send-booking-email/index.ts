@@ -72,7 +72,7 @@ const COPY: Record<Lang, Copy> = {
       bannerSub: "We've received your request and will review it shortly.",
       requested: "Requested appointment",
       statusL: "Status", awaiting: "awaiting approval",
-      outro: `You'll get a separate email as soon as it's approved or declined. Your appointment is only confirmed once you receive an email saying "Your booking is confirmed". Please don't come to the studio before then.`,
+      outro: `You'll get a separate email as soon as it's approved or declined. Your appointment is only confirmed once you receive an email saying "Your booking is confirmed".`,
     },
   },
   sq: {
@@ -144,7 +144,7 @@ const COPY: Record<Lang, Copy> = {
       bannerSub: "Го примивме вашето барање и наскоро ќе го разгледаме.",
       requested: "Побаран термин",
       statusL: "Статус", awaiting: "чека одобрување",
-      outro: `Ќе ви испратиме посебна е-пошта штом биде одобрено или одбиено. Вашиот термин е потврден дури кога ќе добиете е-пошта со наслов „Вашата резервација е потврдена“. Ве молиме не доаѓајте во студиото пред тоа.`,
+      outro: `Ќе ви испратиме посебна е-пошта штом биде одобрено или одбиено. Вашиот термин е потврден дури кога ќе добиете е-пошта со наслов „Вашата резервација е потврдена“.`,
     },
   },
 };
