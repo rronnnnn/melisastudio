@@ -103,12 +103,12 @@ const COPY: Record<Lang, Copy> = {
       outro: `E dimë që kjo është zhgënjyese dhe kërkojmë ndjesë të sinqertë për shqetësimin. Do të na pëlqente t'ju kishim përsëri — mund të rezervoni një kohë që ju përshtatet në <a href="https://studiomelisa.com" style="color:#9A7A60;">studiomelisa.com</a>.`,
     },
     pending_confirmation: {
-      subject: "Kërkesa u pranua — ende e pakonfirmuar — Studio Melisa",
-      banner: "⏳ Rezervimi juaj ende NUK është konfirmuar.",
-      bannerSub: "E pranuam kërkesën tuaj dhe do ta shqyrtojmë së shpejti.",
-      requested: "Termini i kërkuar",
-      statusL: "Statusi", awaiting: "në pritje të miratimit",
-      outro: `Do t'ju dërgojmë një email të veçantë sapo të miratohet ose të refuzohet. Termini juaj konfirmohet vetëm kur të merrni një email me titullin "Rezervimi juaj është konfirmuar". Ju lutemi mos vini në studio para kësaj.`,
+      subject: "E morëm kërkesën tuaj — ende s'është konfirmuar — Studio Melisa",
+      banner: "⏳ Rezervimi ende s'është konfirmuar.",
+      bannerSub: "E morëm kërkesën tuaj dhe po e shohim sa më shpejt.",
+      requested: "Termini që kërkuat",
+      statusL: "Statusi", awaiting: "po pret konfirmimin",
+      outro: `Sapo ta shohim, do t'ju dërgojmë një email tjetër që ta dini nëse termini u pranua apo jo. Termini është i konfirmuar vetëm kur t'ju vijë emaili me titull "Rezervimi juaj është konfirmuar".`,
     },
   },
   mk: {
