@@ -28,7 +28,7 @@ function formatDate(d: string, lang: Lang): string {
 
 type Ctx = { name: string; svc: string; date: string; time: string; cancelUrl: string };
 type Copy = {
-  hi: string; service: string; dateL: string; timeL: string; bye: string; byeWarm: string;
+  hi: string; service: string; dateL: string; timeL: string; bye: string;
   approved: { subject: string; intro: string; statusL: string; status: string; deposit: string; outro: string;
     cancelTitle: string; cancelBody: string; cancelBtn: string; cancelNote: string };
   rejected: { subject: string; body: (c: Ctx) => string; outro: string };
@@ -39,7 +39,7 @@ type Copy = {
 
 const COPY: Record<Lang, Copy> = {
   en: {
-    hi: "Hi", service: "Service", dateL: "Date", timeL: "Time", bye: "— Studio Melisa", byeWarm: "With warm wishes,<br>— Studio Melisa",
+    hi: "Hi", service: "Service", dateL: "Date", timeL: "Time", bye: "— Studio Melisa",
     approved: {
       subject: "Your booking has been approved! 🌸",
       intro: "Great news, your booking at <strong>Studio Melisa</strong> has been approved! 🌸",
@@ -74,7 +74,7 @@ const COPY: Record<Lang, Copy> = {
     },
   },
   sq: {
-    hi: "Përshëndetje", service: "Shërbimi", dateL: "Data", timeL: "Ora", bye: "— Studio Melisa", byeWarm: "Me urimet më të mira,<br>— Studio Melisa",
+    hi: "Përshëndetje", service: "Shërbimi", dateL: "Data", timeL: "Ora", bye: "— Studio Melisa",
     approved: {
       subject: "Rezervimi juaj është aprovuar! 🌸",
       intro: "Lajme të mira rezervimi juaj në <strong>Studio Melisa</strong> është Aprovuar! 🌸",
@@ -109,7 +109,7 @@ const COPY: Record<Lang, Copy> = {
     },
   },
   mk: {
-    hi: "Здраво", service: "Услуга", dateL: "Датум", timeL: "Време", bye: "— Studio Melisa", byeWarm: "Со најдобри желби,<br>— Studio Melisa",
+    hi: "Здраво", service: "Услуга", dateL: "Датум", timeL: "Време", bye: "— Studio Melisa",
     approved: {
       subject: "Вашата резервација е одобрена! 🌸",
       intro: "Одлична вест, вашата резервација во <strong>Studio Melisa</strong> е одобрена! 🌸",
@@ -229,7 +229,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  const { booking, newStatus, services, cancelToken } = await req.json();
+  const { booking, newStatus, services, cancelToken, skipStudioCopy } = await req.json();
   const svcLabel = services[booking.service]?.title || booking.service;
 
   // Prefer the explicit cancelToken; fall back to the value on the booking row.
@@ -285,7 +285,8 @@ Deno.serve(async (req) => {
 
   // On approval/rejection, also notify the studio side (pedicure worker for
   // pedicure bookings, otherwise the main studio inbox).
-  if (newStatus === "approved" || newStatus === "rejected") {
+  // skipStudioCopy lets us test the customer email without notifying the studio.
+  if ((newStatus === "approved" || newStatus === "rejected") && !skipStudioCopy) {
     const heading = newStatus === "approved" ? "New confirmed booking" : "Booking rejected";
     const intro = newStatus === "approved" ? "A booking was confirmed:" : "A booking was rejected:";
     messages.push({

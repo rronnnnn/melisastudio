@@ -2176,36 +2176,9 @@ async function cancelBookingPersonal(id){
   }
 }
 
+// The email itself (copy, language, layout) is built by the send-booking-email
+// edge function from booking.lang; the browser only hands it the booking.
 async function sendBookingEmail(booking, newStatus){
-  const svcLabel = SERVICES[booking.service]?.title || booking.service;
-  let subject, html;
-  if(newStatus==='approved'){
-    subject = "Your booking is confirmed ✓ — Studio Melisa";
-    html =
-`<div style="font-family:Arial,sans-serif;color:#5A4636;line-height:1.6;">
-  <p>Hi ${escHtml(booking.name)},</p>
-  <p>Wonderful news — your booking at <strong>Studio Melisa</strong> is confirmed! 🌸 We can't wait to see you.</p>
-  <p>
-    <strong>Service:</strong> ${escHtml(svcLabel)}<br>
-    <strong>Date:</strong> ${escHtml(booking.date)}<br>
-    <strong>Time:</strong> ${escHtml(booking.time)}
-  </p>
-  <p style="margin:16px 0;padding:14px 16px;border-radius:10px;background:#FBF3EC;border:1px solid #EADBCE;color:#7A5C45;">⚠️ To confirm your booking, the deposit must be paid at Studio Melisa premises at least 3 days before your appointment. If the deposit is not paid within this period, the booking will be cancelled and the appointment slot will be released for other clients.</p>
-  <p>If anything changes, just reply to let us know. See you soon! 💕</p>
-  <p>— Studio Melisa</p>
-</div>`;
-  } else {
-    subject = "About your booking — Studio Melisa";
-    html =
-`<div style="font-family:Arial,sans-serif;color:#5A4636;line-height:1.6;">
-  <p>Hi ${escHtml(booking.name)},</p>
-  <p>Thank you so much for your booking request at <strong>Studio Melisa</strong>. Unfortunately, the slot you chose
-     (${escHtml(booking.date)} at ${escHtml(booking.time)}) isn't available after all.</p>
-  <p>We'd love to still see you — please pick another time that suits you and we'll be happy to welcome you. 🌸</p>
-  <p>With warm wishes,<br>— Studio Melisa</p>
-</div>`;
-  }
-
   const res = await fetch(`${SUPABASE_URL}/functions/v1/send-booking-email`, {
     method: "POST",
     headers: {
