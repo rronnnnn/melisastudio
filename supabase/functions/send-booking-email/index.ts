@@ -80,7 +80,7 @@ const COPY: Record<Lang, Copy> = {
       intro: "Lajme të mira rezervimi juaj në <strong>Studio Melisa</strong> është Aprovuar! 🌸",
       statusL: "Statusi", status: "Aprovuar",
       deposit: "⚠️ Për të konfirmuar rezervimin tuaj, kapari duhet të paguhet në ambientet e Studio Melisa të paktën 3 ditë para terminit. Nëse kapari nuk paguhet brenda këtij afati, rezervimi do të anulohet dhe termini do të lirohet për klientë të tjerë.",
-      outro: "Nëse diçka ndryshon, na përgjigjuni thjesht këtij emaili. Shihemi së shpejti! 💕",
+      outro: "Nëse diçka ndryshon, thjesht përgjigjuni te ky email. Shihemi së shpejti! 💕",
       cancelTitle: "Duhet ta anuloni? Nuk ka problem.",
       cancelBody: "Nëse planet tuaja ndryshojnë, mund ta anuloni terminin duke klikuar lidhjen më poshtë. Ju lutemi anuloni të paktën 24 orë përpara.",
       cancelBtn: "Anuloni terminin tim →",
@@ -88,7 +88,7 @@ const COPY: Record<Lang, Copy> = {
     },
     rejected: {
       subject: "Termini juaj është refuzuar!",
-      body: (c) => `Për kërkesën tuaj për rezervim në Studio Melisa fatkeqësisht, termini që zgjodhët (${c.date} në ${c.time}) nuk është i disponueshëm.`,
+      body: (c) => `Për kërkesën tuaj për rezervim në Studio Melisa fatkeqësisht, termini që zgjodhët (${c.date} në ${c.time}) nuk është në dispozicion.`,
       outro: "Ju lutemi zgjidhni një termin tjetër, ju mirëpresim! 🌸",
     },
     admin_cancelled: {
