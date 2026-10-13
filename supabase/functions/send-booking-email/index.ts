@@ -33,7 +33,6 @@ type Copy = {
     cancelTitle: string; cancelBody: string; cancelBtn: string; cancelNote: string };
   rejected: { subject: string; body: (c: Ctx) => string; outro: string };
   admin_cancelled: { subject: string; body: (c: Ctx) => string; outro: string };
-  freed: { subject: string; body: (c: Ctx) => string; outro: string };
   pending_confirmation: { subject: string; headline: string; banner: string; detailsTitle: string;
     statusL: string; status: string; outro: string; sign: string };
 };
@@ -53,19 +52,14 @@ const COPY: Record<Lang, Copy> = {
       cancelNote: "Note: this link is for cancellations only. If you'd like to reschedule, please contact us directly.",
     },
     rejected: {
-      subject: "About your booking — Studio Melisa",
-      body: (c) => `Thank you for your booking request at <strong>Studio Melisa</strong>. Unfortunately, the slot you chose (${c.date} at ${c.time}) isn't available.`,
-      outro: "We'd love to still see you — please pick another time and we'll be happy to welcome you. 🌸",
+      subject: "Your booking has been declined!",
+      body: (c) => `Regarding your booking request at Studio Melisa, unfortunately the slot you chose (${c.date} at ${c.time}) isn't available.`,
+      outro: "Please pick another time — we'd be happy to welcome you! 🌸",
     },
     admin_cancelled: {
       subject: "Your booking has been cancelled — Studio Melisa",
       body: (c) => `Your booking for <strong>${c.svc}</strong> on <strong>${c.date}</strong> at <strong>${c.time}</strong> is cancelled because of personal reasons. We're sorry for any inconvenience.`,
       outro: `Please check for different booking times at <a href="https://studiomelisa.com" style="color:#9A7A60;">studiomelisa.com</a> — we'd love to still see you. 🌸`,
-    },
-    freed: {
-      subject: "Your appointment has been cancelled — Studio Melisa",
-      body: (c) => `We're sorry to inform you that your appointment for <strong>${c.svc}</strong> on <strong>${c.date}</strong> at <strong>${c.time}</strong> has been cancelled because the deposit was not paid in time.`,
-      outro: `We know this is disappointing, and we sincerely apologize for the inconvenience. We'd love to have you back — please feel free to rebook a time that works for you at <a href="https://studiomelisa.com" style="color:#9A7A60;">studiomelisa.com</a>.`,
     },
     pending_confirmation: {
       subject: "Your request was sent successfully! 🌸",
@@ -91,19 +85,14 @@ const COPY: Record<Lang, Copy> = {
       cancelNote: "Shënim: kjo lidhje është vetëm për anulim. Nëse dëshironi ta zhvendosni terminin, ju lutemi na kontaktoni drejtpërdrejt.",
     },
     rejected: {
-      subject: "Për rezervimin tuaj — Studio Melisa",
-      body: (c) => `Faleminderit për kërkesën tuaj për rezervim në <strong>Studio Melisa</strong>. Fatkeqësisht, termini që zgjodhët (${c.date} në ${c.time}) nuk është i disponueshëm.`,
-      outro: "Do të na pëlqente t'ju shihnim prapë — ju lutemi zgjidhni një kohë tjetër dhe do të jemi të lumtur t'ju mirëpresim. 🌸",
+      subject: "Termini juaj është refuzuar!",
+      body: (c) => `Për kërkesën tuaj për rezervim në Studio Melisa fatkeqësisht, termini që zgjodhët (${c.date} në ${c.time}) nuk është i disponueshëm.`,
+      outro: "Ju lutemi zgjidhni një termin tjetër, ju mirëpresim! 🌸",
     },
     admin_cancelled: {
       subject: "Rezervimi juaj është anuluar — Studio Melisa",
       body: (c) => `Rezervimi juaj për <strong>${c.svc}</strong> më <strong>${c.date}</strong> në orën <strong>${c.time}</strong> është anuluar për arsye personale. Na vjen keq për shqetësimin.`,
       outro: `Ju lutemi shikoni kohë të tjera rezervimi në <a href="https://studiomelisa.com" style="color:#9A7A60;">studiomelisa.com</a> — do të na pëlqente t'ju shihnim prapë. 🌸`,
-    },
-    freed: {
-      subject: "Termini juaj është anuluar — Studio Melisa",
-      body: (c) => `Na vjen keq t'ju njoftojmë se termini juaj për <strong>${c.svc}</strong> më <strong>${c.date}</strong> në orën <strong>${c.time}</strong> është anuluar sepse kapari nuk u pagua në kohë.`,
-      outro: `E dimë që kjo është zhgënjyese dhe kërkojmë ndjesë të sinqertë për shqetësimin. Do të na pëlqente t'ju kishim përsëri — mund të rezervoni një kohë që ju përshtatet në <a href="https://studiomelisa.com" style="color:#9A7A60;">studiomelisa.com</a>.`,
     },
     pending_confirmation: {
       subject: "Kërkesa juaj u dërgua me sukses! 🌸",
@@ -129,19 +118,14 @@ const COPY: Record<Lang, Copy> = {
       cancelNote: "Напомена: овој линк е само за откажување. Ако сакате да го преместите терминот, ве молиме контактирајте нѐ директно.",
     },
     rejected: {
-      subject: "За вашата резервација — Studio Melisa",
-      body: (c) => `Ви благодариме за барањето за резервација во <strong>Studio Melisa</strong>. За жал, терминот што го избравте (${c.date} во ${c.time}) не е достапен.`,
-      outro: "Би сакале сепак да ве видиме — ве молиме изберете друго време и со задоволство ќе ве пречекаме. 🌸",
+      subject: "Вашиот термин е одбиен!",
+      body: (c) => `За вашето барање за резервација во Studio Melisa, за жал, терминот што го избравте (${c.date} во ${c.time}) не е достапен.`,
+      outro: "Ве молиме изберете друг термин, со задоволство ќе ве пречекаме! 🌸",
     },
     admin_cancelled: {
       subject: "Вашата резервација е откажана — Studio Melisa",
       body: (c) => `Вашата резервација за <strong>${c.svc}</strong> на <strong>${c.date}</strong> во <strong>${c.time}</strong> е откажана поради лични причини. Ни е жал за непријатноста.`,
       outro: `Ве молиме проверете други термини на <a href="https://studiomelisa.com" style="color:#9A7A60;">studiomelisa.com</a> — би сакале сепак да ве видиме. 🌸`,
-    },
-    freed: {
-      subject: "Вашиот термин е откажан — Studio Melisa",
-      body: (c) => `Со жалење ве известуваме дека вашиот термин за <strong>${c.svc}</strong> на <strong>${c.date}</strong> во <strong>${c.time}</strong> е откажан бидејќи капарот не беше платен навреме.`,
-      outro: `Знаеме дека ова е разочарувачки и искрено се извинуваме за непријатноста. Со задоволство повторно ќе ве пречекаме — слободно резервирајте термин што ви одговара на <a href="https://studiomelisa.com" style="color:#9A7A60;">studiomelisa.com</a>.`,
     },
     pending_confirmation: {
       subject: "Вашето барање е успешно испратено! 🌸",
@@ -206,13 +190,14 @@ function customerEmail(lang: Lang, kind: string, c: Ctx): { subject: string; htm
     };
   }
 
-  const K = L[kind as "rejected" | "admin_cancelled" | "freed"];
+  // "Freed" (studio frees the slot) reads the same as a refusal to the customer.
+  const K = L[kind === "admin_cancelled" ? "admin_cancelled" : "rejected"];
   return {
     subject: K.subject,
     html: wrap(`${hi}
   <p>${K.body(c)}</p>
   <p>${K.outro}</p>
-  <p>${L.byeWarm}</p>`),
+  <p>${kind === "admin_cancelled" ? L.byeWarm : L.bye}</p>`),
   };
 }
 
