@@ -29,7 +29,7 @@ function formatDate(d: string, lang: Lang): string {
 type Ctx = { name: string; svc: string; date: string; time: string; cancelUrl: string };
 type Copy = {
   hi: string; service: string; dateL: string; timeL: string; bye: string; byeWarm: string;
-  approved: { subject: string; intro: string; deposit: string; outro: string;
+  approved: { subject: string; intro: string; statusL: string; status: string; deposit: string; outro: string;
     cancelTitle: string; cancelBody: string; cancelBtn: string; cancelNote: string };
   rejected: { subject: string; body: (c: Ctx) => string; outro: string };
   admin_cancelled: { subject: string; body: (c: Ctx) => string; outro: string };
@@ -42,8 +42,9 @@ const COPY: Record<Lang, Copy> = {
   en: {
     hi: "Hi", service: "Service", dateL: "Date", timeL: "Time", bye: "— Studio Melisa", byeWarm: "With warm wishes,<br>— Studio Melisa",
     approved: {
-      subject: "Your booking is confirmed ✓ — Studio Melisa",
-      intro: "Wonderful news — your booking at <strong>Studio Melisa</strong> is confirmed! 🌸 We can't wait to see you.",
+      subject: "Your booking has been approved! 🌸",
+      intro: "Great news, your booking at <strong>Studio Melisa</strong> has been approved! 🌸",
+      statusL: "Status", status: "Approved",
       deposit: "⚠️ To confirm your booking, the deposit must be paid at Studio Melisa premises at least 3 days before your appointment. If the deposit is not paid within this period, the booking will be cancelled and the appointment slot will be released for other clients.",
       outro: "If anything changes, just reply to let us know. See you soon! 💕",
       cancelTitle: "Need to cancel? No problem.",
@@ -79,8 +80,9 @@ const COPY: Record<Lang, Copy> = {
   sq: {
     hi: "Përshëndetje", service: "Shërbimi", dateL: "Data", timeL: "Ora", bye: "— Studio Melisa", byeWarm: "Me urimet më të mira,<br>— Studio Melisa",
     approved: {
-      subject: "Rezervimi juaj është konfirmuar ✓ — Studio Melisa",
-      intro: "Lajme të mira — rezervimi juaj në <strong>Studio Melisa</strong> është konfirmuar! 🌸 Mezi presim t'ju shohim.",
+      subject: "Rezervimi juaj është aprovuar! 🌸",
+      intro: "Lajme të mira rezervimi juaj në <strong>Studio Melisa</strong> është Aprovuar! 🌸",
+      statusL: "Statusi", status: "Aprovuar",
       deposit: "⚠️ Për të konfirmuar rezervimin tuaj, kapari duhet të paguhet në ambientet e Studio Melisa të paktën 3 ditë para terminit. Nëse kapari nuk paguhet brenda këtij afati, rezervimi do të anulohet dhe termini do të lirohet për klientë të tjerë.",
       outro: "Nëse diçka ndryshon, na përgjigjuni thjesht këtij emaili. Shihemi së shpejti! 💕",
       cancelTitle: "Duhet ta anuloni? Nuk ka problem.",
@@ -116,8 +118,9 @@ const COPY: Record<Lang, Copy> = {
   mk: {
     hi: "Здраво", service: "Услуга", dateL: "Датум", timeL: "Време", bye: "— Studio Melisa", byeWarm: "Со најдобри желби,<br>— Studio Melisa",
     approved: {
-      subject: "Вашата резервација е потврдена ✓ — Studio Melisa",
-      intro: "Одлична вест — вашата резервација во <strong>Studio Melisa</strong> е потврдена! 🌸 Со нетрпение ве очекуваме.",
+      subject: "Вашата резервација е одобрена! 🌸",
+      intro: "Одлична вест, вашата резервација во <strong>Studio Melisa</strong> е одобрена! 🌸",
+      statusL: "Статус", status: "Одобрена",
       deposit: "⚠️ За да ја потврдите вашата резервација, капарот мора да се плати во просториите на Studio Melisa најмалку 3 дена пред терминот. Доколку капарот не се плати во овој рок, резервацијата ќе биде откажана и терминот ќе биде ослободен за други клиенти.",
       outro: "Ако нешто се промени, само одговорете на оваа порака. Се гледаме наскоро! 💕",
       cancelTitle: "Треба да откажете? Нема проблем.",
@@ -176,7 +179,7 @@ function customerEmail(lang: Lang, kind: string, c: Ctx): { subject: string; htm
       subject: A.subject,
       html: wrap(`${hi}
   <p>${A.intro}</p>
-  <p><strong>${L.service}:</strong> ${c.svc}<br><strong>${L.dateL}:</strong> ${c.date}<br><strong>${L.timeL}:</strong> ${c.time}</p>
+  <p><strong>${L.service}:</strong> ${c.svc}<br><strong>${L.dateL}:</strong> ${c.date}<br><strong>${L.timeL}:</strong> ${c.time}<br><strong>${A.statusL}:</strong> ${A.status}</p>
   <p style="margin:16px 0;padding:14px 16px;border-radius:10px;background:#FBF3EC;border:1px solid #EADBCE;color:#7A5C45;">${A.deposit}</p>
   <p>${A.outro}</p>
   <p>${L.bye}</p>${cancelSection}`),
