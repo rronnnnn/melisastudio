@@ -140,6 +140,12 @@
   .field input:focus{background:rgba(255,255,255,.78);border-color:var(--rose-deep);box-shadow:0 0 0 4px rgba(217,169,158,.22);}
   .two{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
   .err{color:#b3604f;font-size:12.5px;margin-top:8px;min-height:16px;}
+  .email-hint{font-size:12.5px;color:var(--cocoa);margin-top:6px;padding-left:4px;}
+  .email-hint:empty{display:none;}
+  .email-hint.is-err{color:#b3604f;}
+  .email-hint button{border:none;background:none;padding:0;font:inherit;font-weight:600;color:var(--cocoa-deep);
+    text-decoration:underline;text-underline-offset:2px;cursor:pointer;}
+  .email-hint button:hover{color:var(--espresso);}
 
   .cal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
   .cal-head button{border:none;background:var(--glass-strong);width:36px;height:36px;border-radius:50%;cursor:pointer;
@@ -508,7 +514,7 @@
           <div class="field"><label data-i18n="lbl_name">Name</label><input id="fName" placeholder="Name" data-i18n-placeholder="lbl_name" autocomplete="given-name"></div>
           <div class="field"><label data-i18n="lbl_surname">Surname</label><input id="fSurname" placeholder="Surname" data-i18n-placeholder="lbl_surname" autocomplete="family-name"></div>
         </div>
-        <div class="field"><label data-i18n="lbl_email">Email</label><input id="fEmail" type="email" placeholder="you@email.com" autocomplete="email"></div>
+        <div class="field"><label data-i18n="lbl_email">Email</label><input id="fEmail" type="email" placeholder="you@email.com" autocomplete="email"><div class="email-hint" id="emailHint" aria-live="polite"></div></div>
         <div class="field"><label data-i18n="lbl_phone">Phone number</label><input id="fPhone" type="tel" placeholder="+389 70 123 456" autocomplete="tel"></div>
         <div class="err" id="err1"></div>
         <div class="nav"><button class="btn btn-primary" data-next data-i18n="btn_continue">Continue</button></div>
@@ -857,7 +863,7 @@ const I18N = {
     opt_eyebrows:"Zgjidhni shërbimet e vetullave", opt_lipblush:"Zgjidhni stilet e Lip Blush",
     err_choose:"Ju lutemi zgjidhni një.", err_date:"Ju lutemi zgjidhni një datë.",
     err_time:"Ju lutemi zgjidhni një orë.", err_option:"Zgjidhni të paktën një opsion.",
-    err_namesur:"Emri dhe mbiemri janë të detyrueshëm.", err_email:"Shkruani një email të vlefshëm.",
+    err_namesur:"Emri dhe mbiemri janë të detyrueshëm.", err_email:"Shkruani një email të vlefshëm.", email_suggest:"Mos donit të shkruanit {email}?",
     err_phone:"Shkruani një numër telefoni të vlefshëm.",
     loading_times:"Duke ngarkuar oraret e lira…",
     tip_booked:"Tashmë i rezervuar", tip_pending:"Në pritje të miratimit",
@@ -891,7 +897,7 @@ const I18N = {
     opt_eyebrows:"Select your brow services", opt_lipblush:"Select your lip blush styles",
     err_choose:"Please choose one.", err_date:"Please pick a date.",
     err_time:"Please choose a time.", err_option:"Pick at least one option.",
-    err_namesur:"Name and surname are required.", err_email:"Enter a valid email.",
+    err_namesur:"Name and surname are required.", err_email:"Enter a valid email.", email_suggest:"Did you mean {email}?",
     err_phone:"Enter a valid phone number.",
     loading_times:"Loading available times…",
     tip_booked:"Already booked", tip_pending:"Waiting for approval",
@@ -925,7 +931,7 @@ const I18N = {
     opt_eyebrows:"Изберете услуги за веѓи", opt_lipblush:"Изберете стилови за Lip Blush",
     err_choose:"Ве молиме изберете една.", err_date:"Ве молиме изберете датум.",
     err_time:"Ве молиме изберете време.", err_option:"Изберете барем една опција.",
-    err_namesur:"Името и презимето се задолжителни.", err_email:"Внесете валидна е-пошта.",
+    err_namesur:"Името и презимето се задолжителни.", err_email:"Внесете валидна е-пошта.", email_suggest:"Дали мислевте на {email}?",
     err_phone:"Внесете валиден телефонски број.",
     loading_times:"Се вчитуваат слободните термини…",
     tip_booked:"Веќе резервиран", tip_pending:"Се чека одобрување",
@@ -1148,6 +1154,7 @@ function setLang(lang){
   localStorage.setItem('melisaLang', lang);
   applyStaticI18n();
   refreshDynamicI18n();
+  if(typeof renderEmailHint==='function') renderEmailHint();
   const lo = document.getElementById('lipOverlay');
   if(lo && lo.classList.contains('show')) renderLipDisclaimer();
 }
@@ -1459,6 +1466,7 @@ function openBooking(svc){
   $('acrylicAllergyNotice').classList.remove('show');
   $('nailContinue').disabled = false;
   document.querySelectorAll('#fName,#fSurname,#fEmail,#fPhone').forEach(i=>i.value='');
+  emailHint={type:null}; emailBlockedFor=null; renderEmailHint();
   goStep('contact');
   overlay.classList.add('show');
   document.body.classList.add('booking-open');
@@ -1517,11 +1525,107 @@ function next(){
   if(i < seq.length-1) goStep(seq[i+1]);
 }
 
+/* ---- email typo check (step 1) ----
+   Suggests a fix for common provider typos (gmial.com, gmail.con…).
+   The first Continue with a suggestion showing is blocked; a second Continue
+   with the same value goes through, since it may be a real domain. */
+const EMAIL_DOMAINS = ['gmail.com','hotmail.com','outlook.com','yahoo.com','icloud.com','live.com'];
+// Real providers that sit within edit distance 2 of the list above — never "correct" these.
+const EMAIL_REAL_LOOKALIKES = ['mail.com','email.com','ymail.com','gmx.com','me.com','mac.com','aol.com','msn.com','googlemail.com'];
+// Providers with genuine country domains (yahoo.ca, hotmail.de, live.it…).
+const EMAIL_REGIONAL = ['hotmail','outlook','yahoo','live'];
+const EMAIL_BAD_TLDS = {con:'com', cmo:'com', comm:'com', co:'com', cpm:'com'};
+
+function levenshtein(a,b){
+  const row=Array.from({length:b.length+1},(_,j)=>j);
+  for(let i=1;i<=a.length;i++){
+    let prev=row[0]; row[0]=i;
+    for(let j=1;j<=b.length;j++){
+      const tmp=row[j];
+      row[j]=Math.min(row[j]+1, row[j-1]+1, prev+(a[i-1]===b[j-1]?0:1));
+      prev=tmp;
+    }
+  }
+  return row[b.length];
+}
+
+function normalizeEmail(v){ return v.trim().toLowerCase(); }
+
+function isEmailFormatValid(email){
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return false;
+  const domain=email.split('@')[1];
+  return !/\.\./.test(domain) && !/^[.-]|[.-]$/.test(domain);
+}
+
+function closestEmailDomain(domain){
+  let best=null, bestD=3;
+  EMAIL_DOMAINS.forEach(d=>{ const dist=levenshtein(domain,d); if(dist<bestD){ best=d; bestD=dist; } });
+  return best;
+}
+
+// Returns the corrected full address, or null when there's nothing to suggest.
+function suggestEmail(email){
+  const at=email.lastIndexOf('@');
+  if(at<1) return null;
+  const local=email.slice(0,at), domain=email.slice(at+1);
+  if(EMAIL_DOMAINS.includes(domain) || EMAIL_REAL_LOOKALIKES.includes(domain)) return null;
+  const dot=domain.lastIndexOf('.');
+  const name=domain.slice(0,dot), tld=domain.slice(dot+1);
+  if(EMAIL_REGIONAL.includes(name) && /^[a-z]{2}$/.test(tld) && tld!=='co') return null;
+  let fixed=null;
+  if(EMAIL_BAD_TLDS[tld]){
+    const swapped=name+'.'+EMAIL_BAD_TLDS[tld];
+    // .co is a real TLD, so only rewrite it when the result is a known provider (or close to one).
+    fixed = tld==='co' ? closestEmailDomain(swapped) : (closestEmailDomain(swapped) || swapped);
+  } else {
+    fixed=closestEmailDomain(domain);
+  }
+  return (fixed && fixed!==domain) ? local+'@'+fixed : null;
+}
+
+let emailHint={type:null};   // {type:'suggest', email} | {type:'error'} | {type:null}
+let emailBlockedFor=null;    // value whose suggestion already blocked one Continue
+
+function renderEmailHint(){
+  const el=$('emailHint');
+  el.classList.toggle('is-err', emailHint.type==='error');
+  if(emailHint.type==='error'){ el.textContent=t('err_email'); return; }
+  if(emailHint.type!=='suggest'){ el.textContent=''; return; }
+  const [before,after]=t('email_suggest').split('{email}');
+  const btn=document.createElement('button');
+  btn.type='button'; btn.textContent=emailHint.email;
+  btn.addEventListener('click',()=>{
+    $('fEmail').value=emailHint.email;
+    emailHint={type:null}; emailBlockedFor=null; renderEmailHint();
+  });
+  el.replaceChildren(before, btn, after||'');
+}
+
+// onContinue=false → blur: only hints, never blocks. Returns whether step 1 may advance.
+function checkEmailField(onContinue){
+  const input=$('fEmail');
+  const email=normalizeEmail(input.value);
+  if(input.value!==email) input.value=email;
+  if(!email){
+    emailHint = onContinue ? {type:'error'} : {type:null};
+    renderEmailHint(); return false;
+  }
+  if(!isEmailFormatValid(email)){ emailHint={type:'error'}; renderEmailHint(); return false; }
+  const s=suggestEmail(email);
+  emailHint = s ? {type:'suggest', email:s} : {type:null};
+  renderEmailHint();
+  if(!s || !onContinue) return true;
+  if(emailBlockedFor===email) return true;
+  emailBlockedFor=email;
+  return false;
+}
+$('fEmail').addEventListener('blur',()=>checkEmailField(false));
+
 function validateStep1(){
   const name=$('fName').value.trim(), sur=$('fSurname').value.trim(),
-        email=$('fEmail').value.trim(), phone=$('fPhone').value.trim();
+        phone=$('fPhone').value.trim();
   if(!name||!sur){ $('err1').textContent=t('err_namesur'); return false; }
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ $('err1').textContent=t('err_email'); return false; }
+  if(!checkEmailField(true)){ $('err1').textContent=''; return false; }
   if(phone.replace(/\D/g,'').length<6){ $('err1').textContent=t('err_phone'); return false; }
   $('err1').textContent=''; return true;
 }
@@ -1850,7 +1954,7 @@ $('emailBtn').addEventListener('click', async ()=>{
     time:      state.time,
     name:      $('fName').value.trim()+' '+$('fSurname').value.trim(),
     phone:     $('fPhone').value.trim(),
-    email:     $('fEmail').value.trim(),
+    email:     normalizeEmail($('fEmail').value),
     options:   optionsText,
     status:    'pending',
     lang:      currentLang,  // language the customer booked in; drives email language
