@@ -265,6 +265,18 @@
   .btn-primary{color:#fff;background:linear-gradient(135deg,var(--cocoa),var(--cocoa-deep));box-shadow:0 8px 20px rgba(122,92,69,.38);}
   .btn-primary:hover{filter:brightness(1.06);}
   .btn-wa{background:linear-gradient(135deg,#3fb868,#1f9d52);box-shadow:0 8px 20px rgba(31,157,82,.4);color:#fff;}
+  .btn-wa svg{vertical-align:middle;margin-right:6px;}
+  /* full-width WhatsApp booking button under "Book via Email" */
+  .btn-wa-book{display:block;width:100%;margin-top:12px;text-align:center;text-decoration:none;}
+  /* phone: country code + number side by side */
+  .phone-row{display:flex;gap:8px;}
+  .phone-row select{flex:0 0 auto;width:auto;padding:13px 10px;border-radius:16px;font-family:'Quicksand',sans-serif;font-size:15px;
+    color:var(--espresso);background:rgba(255,255,255,.55);border:1px solid var(--glass-line);outline:none;}
+  .phone-row select:focus{background:rgba(255,255,255,.78);border-color:var(--rose-deep);box-shadow:0 0 0 4px rgba(217,169,158,.22);}
+  .phone-row input{flex:1;min-width:0;}
+  .field .opt{text-transform:none;letter-spacing:0;font-weight:500;color:#b9a594;}
+  .wa-code{display:inline-block;margin:4px 0 18px;padding:6px 14px;border-radius:12px;background:rgba(255,255,255,.55);
+    border:1px dashed var(--cocoa);font-weight:700;letter-spacing:.12em;color:var(--cocoa-deep);}
   /* secondary outline button — alternative booking via email */
   .btn-email{width:100%;margin-top:12px;background:transparent;color:var(--cocoa-deep);
     border:1.5px solid var(--cocoa);box-shadow:none;}
@@ -341,6 +353,18 @@
     font-weight:600;font-size:14px;cursor:pointer;background:rgba(239,68,68,.1);
     color:#b91c1c;border:1px solid rgba(239,68,68,.25);transition:.2s;}
   .btn-cancel:hover{background:rgba(239,68,68,.2);}
+  .badge-wa{background:rgba(31,157,82,.12);color:#1f7a44;border:1px solid rgba(31,157,82,.35);margin-left:6px;}
+  .btn-wa-msg{flex:1;padding:10px;border:none;border-radius:12px;font-family:'Quicksand',sans-serif;
+    font-weight:600;font-size:14px;cursor:pointer;background:rgba(31,157,82,.1);
+    color:#1f7a44;border:1px solid rgba(31,157,82,.35);transition:.2s;}
+  .btn-wa-msg:hover{background:rgba(31,157,82,.18);}
+  .wa-status{font-size:12.5px;color:var(--cocoa);margin-top:6px;}
+  .wa-status.sent{color:#1f7a44;}
+  .wa-warn{font-size:12.5px;color:#b3604f;margin-top:6px;}
+  .wa-fallback{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:9999;max-width:92vw;
+    padding:12px 16px;border-radius:14px;background:var(--glass-strong);border:1px solid var(--glass-line);
+    box-shadow:0 8px 24px rgba(90,70,54,.25);font-size:14px;color:var(--espresso);}
+  .wa-fallback a{color:#1f7a44;font-weight:700;}
 
   .admin-empty{text-align:center;padding:48px 20px;color:var(--cocoa);}
   .admin-empty .ico{font-size:48px;margin-bottom:12px;}
@@ -486,6 +510,7 @@
       </div>
       <div class="admin-filter">
         <button class="filter-btn active" data-filter="pending">⏳ Waiting for approval</button>
+        <button class="filter-btn" data-filter="whatsapp">💬 WhatsApp pending</button>
         <button class="filter-btn" data-filter="approved">✓ Approved</button>
         <button class="filter-btn" data-filter="all">All</button>
       </div>
@@ -514,8 +539,9 @@
           <div class="field"><label data-i18n="lbl_name">Name</label><input id="fName" placeholder="Name" data-i18n-placeholder="lbl_name" autocomplete="given-name"></div>
           <div class="field"><label data-i18n="lbl_surname">Surname</label><input id="fSurname" placeholder="Surname" data-i18n-placeholder="lbl_surname" autocomplete="family-name"></div>
         </div>
-        <div class="field"><label data-i18n="lbl_email">Email</label><input id="fEmail" type="email" placeholder="you@email.com" autocomplete="email"><div class="email-hint" id="emailHint" aria-live="polite"></div></div>
-        <div class="field"><label data-i18n="lbl_phone">Phone number</label><input id="fPhone" type="tel" placeholder="+389 70 123 456" autocomplete="tel"></div>
+        <div class="field"><label><span data-i18n="lbl_email">Email</span> <span class="opt" data-i18n="lbl_optional">(optional)</span></label><input id="fEmail" type="email" placeholder="you@email.com" autocomplete="email"><div class="email-hint" id="emailHint" aria-live="polite"></div></div>
+        <div class="field"><label for="fPhone" data-i18n="lbl_phone">Phone number</label>
+          <div class="phone-row"><select id="fCC" aria-label="Country code"></select><input id="fPhone" type="tel" inputmode="tel" placeholder="70 123 456" autocomplete="tel-national"></div></div>
         <div class="err" id="err1"></div>
         <div class="nav"><button class="btn btn-primary" data-next data-i18n="btn_continue">Continue</button></div>
       </div>
@@ -639,6 +665,8 @@
           <button class="btn btn-ghost" data-back data-i18n="btn_back">Back</button>
         </div>
         <button class="btn btn-email" id="emailBtn" data-i18n="btn_email">Book via Email</button>
+        <button class="btn btn-wa btn-wa-book" id="waBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg><span class="btn-label" data-i18n="btn_wa">Book via WhatsApp</span></button>
+        <div class="err" id="errBook"></div>
       </div>
 
     </div>
@@ -655,6 +683,20 @@
       <div class="nav">
         <button class="btn btn-ghost" id="lipCancelBtn"></button>
         <button class="btn btn-primary" id="lipAcceptBtn"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WHATSAPP BOOKING: send the prefilled message to complete it -->
+  <div class="overlay" id="waOverlay">
+    <div class="modal glass" style="max-width:440px;text-align:center;">
+      <div style="font-size:48px;line-height:1;margin-bottom:6px;">🌸</div>
+      <div class="modal-title" data-i18n="wa_confirm_title">One last step!</div>
+      <p style="color:var(--cocoa);margin:14px 0 10px;line-height:1.6;" data-i18n="wa_confirm_msg">Send the WhatsApp message to Studio Melisa to complete your booking. You'll get the answer on WhatsApp.</p>
+      <div class="wa-code" id="waCode"></div>
+      <a class="btn btn-wa btn-wa-book" id="waOpenLink" href="#" target="_blank" rel="noopener" style="padding:18px;font-size:17px;"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg><span data-i18n="wa_open">Open WhatsApp</span></a>
+      <div class="nav" style="justify-content:center;">
+        <button class="btn btn-ghost" id="waCloseBtn" data-i18n="confirm_close">Done</button>
       </div>
     </div>
   </div>
@@ -778,6 +820,231 @@ const STUDIO_EMAIL = "onboarding@resend.dev"; // replace with verified domain in
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 /* ============================================================
+   WHATSAPP — click-to-chat (wa.me) only: no API, nothing sent automatically.
+   Clients' booking messages go to this number; Melisa's replies are opened
+   prefilled in her own WhatsApp and she taps Send.
+   ============================================================ */
+const MELISA_WHATSAPP = "38972751234";
+
+/* Every WhatsApp message, per language (the language the client booked in).
+   {name} {service} {options} {date} {time} {code} {cancelUrl} are filled in;
+   *text* is WhatsApp bold. Lines whose placeholder is empty are dropped. */
+const WA_TEMPLATES = {
+  sq: {
+    // client → studio, from the booking wizard
+    request:
+`Përshëndetje Studio Melisa! 🌸 Dëshiroj të rezervoj një termin:
+
+Emri: {name}
+Shërbimi: {service}
+Detajet: {options}
+Data: *{date}*
+Ora: *{time}*
+Kodi i rezervimit: {code}`,
+    // Approve
+    approved:
+`Përshëndetje {name}, rezervimi juaj në Studio Melisa është aprovuar! 🌸
+
+Shërbimi: {service}
+Data: *{date}*
+Ora: *{time}*
+Kodi: {code}
+
+⚠️ Për të konfirmuar rezervimin tuaj, kapari duhet të paguhet në ambientet e Studio Melisa të paktën 3 ditë para terminit. Nëse kapari nuk paguhet brenda këtij afati, rezervimi do të anulohet dhe termini do të lirohet për klientë të tjerë.
+
+Nëse duhet ta anuloni (të paktën 24 orë përpara): {cancelUrl}
+
+Shihemi së shpejti! 💕
+– Studio Melisa`,
+    // Reject (pending → rejected)
+    rejected:
+`Përshëndetje {name}, fatkeqësisht termini që zgjodhët (*{date}* në *{time}*) nuk është në dispozicion. Na vjen keq! 🙏
+
+Ju lutemi zgjidhni një termin tjetër në studiomelisa.com, ju mirëpresim! 🌸
+– Studio Melisa`,
+    // Cancel Booking and Free Slot (approved booking removed by the studio)
+    cancelled:
+`Përshëndetje {name}, ju njoftojmë se rezervimi juaj për {service}, më *{date}*, në orën *{time}*, është anuluar për arsye personale.
+
+Ju kërkojmë ndjesë për çdo shqetësim dhe ju falënderojmë për mirëkuptimin. 🌸
+Nëse dëshironi të rezervoni një termin të ri, vizitoni studiomelisa.com.
+– Studio Melisa`,
+    // the WhatsApp button: message the client anytime
+    general:
+`Përshëndetje {name}, ju shkruan Studio Melisa për rezervimin tuaj për {service}, më *{date}* në orën *{time}*.
+
+– Studio Melisa`,
+  },
+  en: {
+    request:
+`Hi Studio Melisa! 🌸 I'd like to book an appointment:
+
+Name: {name}
+Service: {service}
+Details: {options}
+Date: *{date}*
+Time: *{time}*
+Booking code: {code}`,
+    approved:
+`Hi {name}, your booking at Studio Melisa has been approved! 🌸
+
+Service: {service}
+Date: *{date}*
+Time: *{time}*
+Code: {code}
+
+⚠️ To confirm your booking, the deposit must be paid at Studio Melisa premises at least 3 days before your appointment. If the deposit is not paid within this period, the booking will be cancelled and the slot will be released for other clients.
+
+Need to cancel (at least 24 hours ahead)? {cancelUrl}
+
+See you soon! 💕
+– Studio Melisa`,
+    rejected:
+`Hi {name}, unfortunately the slot you chose (*{date}* at *{time}*) isn't available. We're sorry! 🙏
+
+Please pick another time at studiomelisa.com, we'd be happy to welcome you! 🌸
+– Studio Melisa`,
+    cancelled:
+`Hi {name}, we're letting you know that your booking for {service} on *{date}* at *{time}* has been cancelled for personal reasons.
+
+We apologize for any inconvenience and thank you for your understanding. 🌸
+If you'd like to book a new appointment, visit studiomelisa.com.
+– Studio Melisa`,
+    general:
+`Hi {name}, this is Studio Melisa about your booking for {service} on *{date}* at *{time}*.
+
+– Studio Melisa`,
+  },
+  mk: {
+    request:
+`Здраво Studio Melisa! 🌸 Сакам да резервирам термин:
+
+Име: {name}
+Услуга: {service}
+Детали: {options}
+Датум: *{date}*
+Време: *{time}*
+Код на резервација: {code}`,
+    approved:
+`Здраво {name}, вашата резервација во Studio Melisa е одобрена! 🌸
+
+Услуга: {service}
+Датум: *{date}*
+Време: *{time}*
+Код: {code}
+
+⚠️ За да ја потврдите вашата резервација, капарот мора да се плати во просториите на Studio Melisa најмалку 3 дена пред терминот. Доколку капарот не се плати во овој рок, резервацијата ќе биде откажана и терминот ќе биде ослободен за други клиенти.
+
+Треба да откажете (најмалку 24 часа однапред)? {cancelUrl}
+
+Се гледаме наскоро! 💕
+– Studio Melisa`,
+    rejected:
+`Здраво {name}, за жал терминот што го избравте (*{date}* во *{time}*) не е достапен. Ни е жал! 🙏
+
+Ве молиме изберете друг термин на studiomelisa.com, со задоволство ќе ве пречекаме! 🌸
+– Studio Melisa`,
+    cancelled:
+`Здраво {name}, ве известуваме дека вашата резервација за {service}, на *{date}*, во *{time}*, е откажана поради лични причини.
+
+Се извинуваме за евентуалната непријатност и ви благодариме за разбирањето. 🌸
+Ако сакате да резервирате нов термин, посетете го studiomelisa.com.
+– Studio Melisa`,
+    general:
+`Здраво {name}, ви пишува Studio Melisa за вашата резервација за {service}, на *{date}* во *{time}*.
+
+– Studio Melisa`,
+  },
+};
+
+const WA_LOCALES = { sq:'sq-AL', en:'en-GB', mk:'mk-MK' };
+const WA_SERVICE_NAMES = {
+  sq:{ manicure:"Manikyr", pedicure:"Pedikyr", eyebrows:"Vetullat", lipblush:"Lip Blush" },
+  en:{ manicure:"Manicure", pedicure:"Pedicure", eyebrows:"Eyebrows", lipblush:"Lip Blush" },
+  mk:{ manicure:"Маникир", pedicure:"Педикир", eyebrows:"Веѓи", lipblush:"Lip Blush" },
+};
+function waLang(l){ return WA_TEMPLATES[l] ? l : 'en'; }
+// 'YYYY-MM-DD' → long date in the client's language (same style as the emails)
+function waDate(ds, lang){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(ds||'')) return ds||'';
+  try {
+    return new Date(ds+'T12:00:00Z').toLocaleDateString(WA_LOCALES[lang], {
+      ...(lang==='sq' ? {} : { weekday:'long' }), day:'numeric', month:'long', year:'numeric', timeZone:'UTC' });
+  } catch(_){ return ds; }
+}
+// Fill a template; drop any line whose placeholder came out empty (no "Code: " on old bookings).
+function waMessage(kind, vars, lang){
+  const tpl = WA_TEMPLATES[waLang(lang)][kind];
+  return tpl.split('\n').filter(line=>{
+    const keys=[...line.matchAll(/\{(\w+)\}/g)].map(m=>m[1]);
+    return !keys.length || keys.every(k=>vars[k]);
+  }).map(line=>line.replace(/\{(\w+)\}/g,(_,k)=>vars[k]??'')).join('\n');
+}
+// The message for an admin action on a saved booking row.
+function waMessageForBooking(kind, b){
+  const lang = waLang(b.lang);
+  return waMessage(kind, {
+    name: b.name, service: WA_SERVICE_NAMES[lang][b.service] || b.service,
+    options: b.options || '', date: waDate(b.date, lang), time: b.time, code: b.booking_code || '',
+    cancelUrl: b.cancel_token ? 'https://studiomelisa.com/?cancel='+b.cancel_token : '',
+  }, lang);
+}
+function waLink(phoneDigits, text){ return 'https://wa.me/'+phoneDigits+'?text='+encodeURIComponent(text); }
+
+/* ---- phone numbers: stored digits-only, international ("38970123456") ---- */
+const COUNTRY_CODES = [
+  { cc:'389', flag:'🇲🇰', len:[8,8] },   // North Macedonia
+  { cc:'355', flag:'🇦🇱', len:[8,9] },   // Albania
+  { cc:'383', flag:'🇽🇰', len:[8,8] },   // Kosovo
+  { cc:'381', flag:'🇷🇸', len:[8,10] },  // Serbia
+  { cc:'359', flag:'🇧🇬', len:[8,9] },   // Bulgaria
+  { cc:'30',  flag:'🇬🇷', len:[10,10] }, // Greece
+  { cc:'90',  flag:'🇹🇷', len:[10,10] }, // Turkey
+  { cc:'49',  flag:'🇩🇪', len:[10,11] }, // Germany
+  { cc:'43',  flag:'🇦🇹', len:[10,13] }, // Austria
+  { cc:'41',  flag:'🇨🇭', len:[9,9] },   // Switzerland
+  { cc:'39',  flag:'🇮🇹', len:[9,11] },  // Italy
+  { cc:'33',  flag:'🇫🇷', len:[9,9] },   // France
+  { cc:'44',  flag:'🇬🇧', len:[10,10] }, // UK
+  { cc:'1',   flag:'🇺🇸', len:[10,10] }, // US / Canada
+];
+/* "070 123 456", "+389 70 123 456", "0038970123456" → "38970123456".
+   A leading + or 00 means the number already carries its country code;
+   otherwise the selected code is used and a trunk 0 is dropped. */
+function normalizePhone(raw, cc='389'){
+  const s = String(raw||'').trim();
+  let d = s.replace(/\D/g,'');
+  if(!d) return '';
+  if(s.startsWith('+')) return d;
+  if(d.startsWith('00')) return d.slice(2);
+  const known = COUNTRY_CODES.find(c=>c.cc===cc);
+  // typed with the country code but without + ("38970123456")
+  if(d.startsWith(cc) && known && d.length-cc.length>=known.len[0] && d.length-cc.length<=known.len[1]) return d;
+  d = d.replace(/^0+/,'');
+  return cc + d;
+}
+function isValidPhone(intl){
+  if(!/^\d{8,15}$/.test(intl||'')) return false;
+  const c = COUNTRY_CODES.find(c=>intl.startsWith(c.cc));
+  if(!c) return true; // other countries: plain length check
+  const n = intl.length - c.cc.length;
+  return n>=c.len[0] && n<=c.len[1];
+}
+// For any stored phone (old rows were saved as typed): a wa.me-ready number or null.
+function waPhone(stored){
+  const intl = normalizePhone(stored, '389');
+  return isValidPhone(intl) ? intl : null;
+}
+
+/* ---- booking code: SM-X7K2 (no 0/O/1/I/L, easy to read out) ---- */
+const CODE_CHARS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+function newBookingCode(){
+  const r = new Uint32Array(4);
+  crypto.getRandomValues(r);
+  return 'SM-'+Array.from(r, x=>CODE_CHARS[x % CODE_CHARS.length]).join('');
+}
+
+/* ============================================================
    SUPABASE MIGRATION — run this manually in the SQL editor
    for the "Block Hours Today" admin feature:
 
@@ -845,6 +1112,12 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    ============================================================ */
 const I18N = {
   sq: {
+    lbl_optional:"(opsionale)", btn_wa:"Rezervo me WhatsApp",
+    err_email_needed:"Shkruani email-in tuaj për të rezervuar me email.",
+    err_save:"Rezervimi nuk u ruajt. Ju lutemi provoni përsëri.",
+    wa_confirm_title:"Edhe një hap!",
+    wa_confirm_msg:"Dërgoni mesazhin në WhatsApp te Studio Melisa për ta përfunduar rezervimin. Përgjigjen do ta merrni në WhatsApp.",
+    wa_open:"Hap WhatsApp",
     tagline:"Thonjtë · Vetullat · Lip Blush",
     svc_manicure:"Manikyr", svc_pedicure:"Pedikyr", svc_eyebrows:"Vetullat", svc_lipblush:"Lip Blush",
     book:"Rezervo", footer_booked:"Rezervuar me dashuri në", footer_copyright:"© 2026 <a href='https://www.highlevel.mk' target='_blank' rel='noopener' style='color:inherit;text-decoration:underline;'>High Level</a>. All Rights Reserved.",
@@ -879,6 +1152,12 @@ const I18N = {
     confirm_close:"Në rregull"
   },
   en: {
+    lbl_optional:"(optional)", btn_wa:"Book via WhatsApp",
+    err_email_needed:"Enter your email to book via email.",
+    err_save:"Your booking couldn't be saved. Please try again.",
+    wa_confirm_title:"One last step!",
+    wa_confirm_msg:"Send the WhatsApp message to Studio Melisa to complete your booking. You'll get the answer on WhatsApp.",
+    wa_open:"Open WhatsApp",
     tagline:"Nails · Brows · Lip Blush",
     svc_manicure:"Manicure", svc_pedicure:"Pedicure", svc_eyebrows:"Eyebrows", svc_lipblush:"Lip Blush",
     book:"Book", footer_booked:"Booked with love at", footer_copyright:"© 2026 <a href='https://www.highlevel.mk' target='_blank' rel='noopener' style='color:inherit;text-decoration:underline;'>High Level</a>. All Rights Reserved.",
@@ -913,6 +1192,12 @@ const I18N = {
     confirm_close:"Done"
   },
   mk: {
+    lbl_optional:"(опционално)", btn_wa:"Резервирај преку WhatsApp",
+    err_email_needed:"Внесете го вашиот мејл за да резервирате преку мејл.",
+    err_save:"Резервацијата не беше зачувана. Ве молиме обидете се повторно.",
+    wa_confirm_title:"Уште еден чекор!",
+    wa_confirm_msg:"Испратете ја пораката на WhatsApp до Studio Melisa за да ја завршите резервацијата. Одговорот ќе го добиете на WhatsApp.",
+    wa_open:"Отвори WhatsApp",
     tagline:"Нокти · Веѓи · Lip Blush",
     svc_manicure:"Маникир", svc_pedicure:"Педикир", svc_eyebrows:"Веѓи", svc_lipblush:"Lip Blush",
     book:"Резервирај", footer_booked:"Резервирано со љубов во", footer_copyright:"© 2026 <a href='https://www.highlevel.mk' target='_blank' rel='noopener' style='color:inherit;text-decoration:underline;'>High Level</a>. All Rights Reserved.",
@@ -1466,6 +1751,9 @@ function openBooking(svc){
   $('acrylicAllergyNotice').classList.remove('show');
   $('nailContinue').disabled = false;
   document.querySelectorAll('#fName,#fSurname,#fEmail,#fPhone').forEach(i=>i.value='');
+  $('fCC').value='389';
+  state.returnToReview=false;
+  $('errBook').textContent='';
   emailHint={type:null}; emailBlockedFor=null; renderEmailHint();
   goStep('contact');
   overlay.classList.add('show');
@@ -1521,6 +1809,8 @@ function validateStep(key){
 function next(){
   const seq=getSequence();
   if(!validateStep(state.stepKey)) return;
+  // came back from "Book via email" to add an email: straight back to the review
+  if(state.stepKey==='contact' && state.returnToReview){ state.returnToReview=false; return goStep('review'); }
   const i=seq.indexOf(state.stepKey);
   if(i < seq.length-1) goStep(seq[i+1]);
 }
@@ -1621,14 +1911,24 @@ function checkEmailField(onContinue){
 }
 $('fEmail').addEventListener('blur',()=>checkEmailField(false));
 
+// The phone as typed, in stored form: digits-only international ("38970123456").
+function currentPhone(){ return normalizePhone($('fPhone').value, $('fCC').value); }
+
 function validateStep1(){
-  const name=$('fName').value.trim(), sur=$('fSurname').value.trim(),
-        phone=$('fPhone').value.trim();
+  const name=$('fName').value.trim(), sur=$('fSurname').value.trim();
   if(!name||!sur){ $('err1').textContent=t('err_namesur'); return false; }
-  if(!checkEmailField(true)){ $('err1').textContent=''; return false; }
-  if(phone.replace(/\D/g,'').length<6){ $('err1').textContent=t('err_phone'); return false; }
+  // Email is optional (WhatsApp bookings); when given, the usual checks apply.
+  // With returnToReview set the client came back to add one, so it's required then.
+  if($('fEmail').value.trim() || state.returnToReview){
+    if(!checkEmailField(true)){ $('err1').textContent=''; return false; }
+  } else { emailHint={type:null}; renderEmailHint(); }
+  if(!isValidPhone(currentPhone())){ $('err1').textContent=t('err_phone'); return false; }
   $('err1').textContent=''; return true;
 }
+
+/* country code selector (default +389) */
+$('fCC').innerHTML = COUNTRY_CODES.map(c=>`<option value="${c.cc}">${c.flag} +${c.cc}</option>`).join('');
+$('fCC').value='389';
 
 /* ---- calendar ---- */
 const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -1907,8 +2207,8 @@ function renderSummary(){
   const rows=[
     [t('sum_service'), svcTitle(state.service)],
     [t('sum_name'), $('fName').value.trim()+' '+$('fSurname').value.trim()],
-    [t('sum_phone'), $('fPhone').value.trim()],
-    [t('sum_email'), $('fEmail').value.trim()],
+    [t('sum_phone'), '+'+currentPhone()],
+    [t('sum_email'), $('fEmail').value.trim() || '—'],
     [t('sum_date'), fmtDate(state.date)],
     [t('sum_time'), timeVal]
   ];
@@ -1928,14 +2228,9 @@ function renderSummary(){
     '<div class="sum-row"><span class="k">'+r[0]+'</span><span class="v">'+r[1]+'</span></div>').join('');
 }
 
-/* ---- confirm: save booking to Supabase, then notify the studio by email ---- */
-$('emailBtn').addEventListener('click', async ()=>{
-  const btn = $('emailBtn');
-  btn.disabled = true;
-  btn.textContent = t('btn_saving');
-
+/* The booking row for the current wizard state (shared by both booking buttons). */
+function wizardBooking(channel){
   const isMulti = MULTISTEP_SERVICES.includes(state.service);
-  const duration = currentDuration();
   let optionsText;
   if(isMulti){
     const parts=[state.nailType];
@@ -1948,21 +2243,42 @@ $('emailBtn').addEventListener('click', async ()=>{
   } else {
     optionsText = state.opts.join(', ');
   }
-  const bookingData = {
+  return {
     service:   state.service,
     date:      dateStr(state.date),
     time:      state.time,
     name:      $('fName').value.trim()+' '+$('fSurname').value.trim(),
-    phone:     $('fPhone').value.trim(),
-    email:     normalizeEmail($('fEmail').value),
+    phone:     currentPhone(),
+    email:     normalizeEmail($('fEmail').value) || null,
     options:   optionsText,
     status:    'pending',
+    channel,
     lang:      currentLang,  // language the customer booked in; drives email language
     // Eyebrows reuses these columns: service_type = brow service, nail_type = coloring answer.
     nail_type: (isMulti || state.service==='eyebrows') ? state.nailType : null,
     service_type: (isMulti || state.service==='eyebrows') ? state.serviceType : null,
-    duration_minutes: duration
+    duration_minutes: currentDuration()
   };
+}
+
+/* ---- confirm: save booking to Supabase, then notify the studio by email ---- */
+$('emailBtn').addEventListener('click', async ()=>{
+  // Email booking needs an email: send the client back to the field instead of submitting.
+  if(!normalizeEmail($('fEmail').value)){
+    state.returnToReview = true;
+    goStep('contact');
+    emailHint={type:null}; renderEmailHint();
+    $('err1').textContent = t('err_email_needed');
+    $('fEmail').scrollIntoView({ behavior:'smooth', block:'center' });
+    $('fEmail').focus({ preventScroll:true });
+    return;
+  }
+  const btn = $('emailBtn');
+  btn.disabled = true;
+  btn.textContent = t('btn_saving');
+
+  const duration = currentDuration();
+  const bookingData = wizardBooking('email');
 
   let saved = null;
   try {
@@ -2005,6 +2321,67 @@ $('emailBtn').addEventListener('click', async ()=>{
   showConfirmation();
 });
 
+/* ---- Book via WhatsApp: save as pending, then the client sends the prefilled message ----
+   wa.me is opened from a real link on the confirmation screen (a tap), never from
+   window.open after an await, which popup blockers and iOS Safari refuse. */
+async function insertWithCode(row){
+  for(let attempt=0; attempt<5; attempt++){
+    const booking_code = newBookingCode();
+    const { data, error } = await sb.from('bookings').insert({ ...row, booking_code }).select().single();
+    if(!error) return data;
+    if(error.code !== '23505') throw error;   // unique violation → try another code
+  }
+  throw new Error('Could not generate a unique booking code');
+}
+
+$('waBtn').addEventListener('click', async ()=>{
+  const btn = $('waBtn');
+  const label = btn.querySelector('.btn-label');
+  $('errBook').textContent='';
+  btn.disabled = true;
+  label.textContent = t('btn_saving');
+
+  const bookingData = wizardBooking('whatsapp');
+  let saved;
+  try {
+    saved = await insertWithCode(bookingData);
+  } catch(e){
+    // Unlike email, the code must exist in the database for Melisa to match the chat.
+    console.error('Could not save WhatsApp booking:', e);
+    $('errBook').textContent = t('err_save');
+    btn.disabled = false;
+    label.textContent = t('btn_wa');
+    return;
+  }
+
+  const lang = waLang(currentLang);
+  const dispTime = state.service==='eyebrows' ? fmtTimeRange(state.time, bookingData.duration_minutes+1) : state.time;
+  const msg = waMessage('request', {
+    name: saved.name, service: WA_SERVICE_NAMES[lang][saved.service] || svcTitle(saved.service),
+    options: saved.options || '', date: waDate(saved.date, lang), time: dispTime, code: saved.booking_code,
+  }, lang);
+  $('waCode').textContent = saved.booking_code;
+  $('waOpenLink').href = waLink(MELISA_WHATSAPP, msg);
+  btn.disabled = false;
+  label.textContent = t('btn_wa');
+  closeBooking();
+  $('waOverlay').classList.add('show');
+  document.documentElement.style.overflow='hidden';
+  document.body.style.overflow='hidden';
+
+  // Studio inbox still hears about it (non-blocking). The client gets no email:
+  // their answers come on WhatsApp.
+  sendRequestNotice({ ...saved, date: fmtDate(state.date), time: dispTime })
+    .catch(e=>console.error('Studio notification failed:', e));
+});
+function closeWaConfirmation(){
+  $('waOverlay').classList.remove('show');
+  document.documentElement.style.overflow='';
+  document.body.style.overflow='';
+}
+$('waCloseBtn').addEventListener('click', closeWaConfirmation);
+$('waOverlay').addEventListener('click', e=>{ if(e.target===$('waOverlay')) closeWaConfirmation(); });
+
 /* ---- booking request confirmation modal ---- */
 function showConfirmation(){
   closeBooking();
@@ -2020,7 +2397,7 @@ function closeConfirmation(){
 $('confirmCloseBtn').addEventListener('click', closeConfirmation);
 $('confirmOverlay').addEventListener('click', e=>{ if(e.target===$('confirmOverlay')) closeConfirmation(); });
 
-document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeBooking(); closeHoursPanel(); closeConfirmation(); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'){ closeBooking(); closeHoursPanel(); closeConfirmation(); closeWaConfirmation(); } });
 
 /* ============================================================
    ADMIN PANEL
@@ -2123,7 +2500,9 @@ async function loadAdminBookings(){
     } else {
       query = query.neq('service', 'pedicure');
     }
-    if(adminFilter !== 'all'){
+    if(adminFilter === 'whatsapp'){
+      query = query.eq('status', 'pending').eq('channel', 'whatsapp');
+    } else if(adminFilter !== 'all'){
       query = query.eq('status', adminFilter);
     }
     if(adminDateFilter){
@@ -2142,14 +2521,28 @@ function renderAdminBookings(bookings){
   const list = $('bookingsList');
   if(bookings.length === 0){
     let msg = adminFilter==='pending' ? 'No bookings waiting for approval.' :
+                adminFilter==='whatsapp' ? 'No WhatsApp bookings waiting for approval.' :
                 adminFilter==='approved' ? 'No approved bookings.' : 'No bookings yet.';
     if(adminDateFilter) msg = msg.replace(/\.$/, ` for ${adminDateFilter}.`);
     list.innerHTML=`<div class="admin-empty"><div class="ico">🌸</div><p>${msg}</p></div>`;
     return;
   }
 
+  adminBookingsById = new Map(bookings.map(b=>[b.id, b]));
   list.innerHTML = bookings.map(b=>{
     const svcLabel = SERVICES[b.service]?.title || b.service;
+    const isWa = b.channel === 'whatsapp';
+    const phone = waPhone(b.phone);
+    const waBadge = isWa ? `<span class="booking-badge badge-wa">💬 WhatsApp${b.booking_code ? ' · '+escHtml(b.booking_code) : ''}</span>` : '';
+    const waLine = !phone
+      ? `<div class="wa-warn">⚠️ No valid phone number${isWa ? ' — this WhatsApp client can\'t be messaged; contact them another way' : ' — WhatsApp unavailable'}.</div>`
+      : b.whatsapp_last_sent_at
+        ? `<div class="wa-status sent">💬 Last WhatsApp sent ✓ ${escHtml(fmtSentAt(b.whatsapp_last_sent_at))}</div>`
+        : `<div class="wa-status">💬 WhatsApp not sent</div>`;
+    const waBtn = phone ? `
+      <div class="booking-actions">
+        <button class="btn-wa-msg" onclick="messageClient('${b.id}')">💬 WhatsApp</button>
+      </div>` : '';
     const badgeClass = b.status==='pending'?'badge-pending':b.status==='approved'?'badge-approved':'badge-rejected';
     const badgeText  = b.status==='pending'?'⏳ Pending':b.status==='approved'?'✓ Approved':'✗ Rejected';
     const approveReject = b.status==='pending' ? `
@@ -2165,12 +2558,12 @@ function renderAdminBookings(bookings){
       <div class="booking-actions">
         <button class="btn-cancel" onclick="cancelBookingPersonal('${b.id}')">🚫 Cancel Booking</button>
       </div>` : '';
-    const actions = approveReject + freeSlotBtn + cancelBtn;
+    const actions = approveReject + freeSlotBtn + cancelBtn + waBtn;
     return `
       <div class="booking-card ${b.status==='pending'?'pending-card':b.status==='approved'?'approved-card':''} glass" id="card-${b.id}">
         <div class="booking-card-top">
           <div class="booking-name">${escHtml(b.name)}</div>
-          <span class="booking-badge ${badgeClass}">${badgeText}</span>
+          <span><span class="booking-badge ${badgeClass}">${badgeText}</span>${waBadge}</span>
         </div>
         <div class="booking-meta">
           <span>📅 ${b.date}</span>
@@ -2180,25 +2573,82 @@ function renderAdminBookings(bookings){
           <span>📱 ${escHtml(b.phone)}</span>
         </div>
         <div style="font-size:13px;color:var(--cocoa);margin-top:6px;">Options: ${escHtml(b.options||'—')}</div>
+        ${waLine}
         ${actions}
       </div>`;
   }).join('');
 }
 
+/* ---- WhatsApp from the admin panel ----
+   For WhatsApp bookings, each client-notifying action opens wa.me with the matching
+   message synchronously in the click (before any await, so it isn't treated as a
+   popup), then runs the usual database update. Email bookings are unchanged. */
+let adminBookingsById = new Map();   // rows as last rendered, so messages build without an await
+
+function fmtSentAt(iso){
+  try { return new Date(iso).toLocaleString('en-GB',{ day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }); }
+  catch(_){ return iso; }
+}
+// Opens WhatsApp with the message; returns true if a window opened. If the browser
+// blocked it anyway, a small banner offers the same link to tap.
+function openWhatsApp(phone, text){
+  const url = waLink(phone, text);
+  const w = window.open(url, '_blank');
+  if(w){ try{ w.opener = null; }catch(_){} return true; }
+  showWaFallback(url);
+  return true; // the message is ready either way; Melisa sends it from the banner
+}
+function showWaFallback(url){
+  document.querySelector('.wa-fallback')?.remove();
+  const box = document.createElement('div');
+  box.className = 'wa-fallback';
+  box.innerHTML = 'WhatsApp didn\'t open. <a target="_blank" rel="noopener">Tap here to open the message</a>';
+  const a = box.querySelector('a');
+  a.href = url;
+  a.addEventListener('click', ()=>setTimeout(()=>box.remove(), 300));
+  document.body.appendChild(box);
+  setTimeout(()=>box.remove(), 20000);
+}
+// For a WhatsApp booking with a usable phone: open the message now. Returns whether it did.
+function notifyByWhatsApp(b, kind){
+  if(!b || b.channel !== 'whatsapp') return false;
+  const phone = waPhone(b.phone);
+  if(!phone) return false;
+  return openWhatsApp(phone, waMessageForBooking(kind, b));
+}
+
+// "💬 WhatsApp" button: message the client anytime.
+async function messageClient(id){
+  const b = adminBookingsById.get(id);
+  const phone = b && waPhone(b.phone);
+  if(!phone) return;
+  openWhatsApp(phone, waMessageForBooking('general', b));
+  try {
+    const { error } = await sb.from('bookings').update({ whatsapp_last_sent_at: new Date().toISOString() }).eq('id', id);
+    if(error) throw error;
+    await loadAdminBookings();
+  } catch(e){ console.error('Could not record WhatsApp sent time:', e); }
+}
+
 async function updateBooking(id, newStatus){
+  // WhatsApp first, while we're still inside the click
+  const viaWa = notifyByWhatsApp(adminBookingsById.get(id), newStatus==='approved' ? 'approved' : 'rejected');
   const card = document.getElementById('card-'+id);
   if(card){ card.style.opacity='0.5'; card.style.pointerEvents='none'; }
 
   try {
-    const { error } = await sb.from('bookings').update({ status: newStatus }).eq('id', id);
+    const patch = { status: newStatus };
+    if(viaWa) patch.whatsapp_last_sent_at = new Date().toISOString();
+    const { error } = await sb.from('bookings').update(patch).eq('id', id);
     if(error) throw error;
 
-    // Fetch booking details and notify the customer by email (non-blocking)
+    // Fetch booking details and notify the customer by email (non-blocking).
+    // WhatsApp bookings were notified on WhatsApp above and never get email.
     try {
       const { data: booking, error: fErr } = await sb
         .from('bookings').select('*').eq('id', id).single();
       if(fErr) throw fErr;
-      if(booking && booking.email && (newStatus==='approved' || newStatus==='rejected')){
+      if(booking && booking.channel !== 'whatsapp' && booking.email && (newStatus==='approved' || newStatus==='rejected')){
         await sendBookingEmail(booking, newStatus);
       }
     } catch(emailErr){
@@ -2214,8 +2664,9 @@ async function updateBooking(id, newStatus){
 }
 
 async function freeSlot(id){
-  console.log('freeSlot called with id:', id);
   if(!confirm('Are you sure you want to remove this booking and free the slot?')) return;
+  // Freeing an approved booking reads to the client as a cancellation.
+  const viaWa = notifyByWhatsApp(adminBookingsById.get(id), 'cancelled');
   const card = document.getElementById('card-'+id);
   if(card){ card.style.opacity='0.5'; card.style.pointerEvents='none'; }
 
@@ -2225,20 +2676,16 @@ async function freeSlot(id){
     const { data: booking, error: fErr } = await sb
       .from('bookings').select('*').eq('id', id).single();
     if(fErr) throw fErr;
-    console.log('freeSlot fetched booking:', booking);
 
     const { error } = await sb.from('bookings').delete().eq('id', id);
     if(error) throw error;
 
-    if(booking && booking.email){
-      console.log('freeSlot calling sendBookingEmail with:', booking, 'freed');
+    if(!viaWa && booking && booking.channel !== 'whatsapp' && booking.email){
       try {
         await sendBookingEmail(booking, 'freed');
       } catch(emailErr){
         console.error('Email notification failed:', emailErr);
       }
-    } else {
-      console.log('freeSlot skipped sendBookingEmail — booking or booking.email missing:', booking);
     }
 
     await loadAdminBookings();
@@ -2251,6 +2698,7 @@ async function freeSlot(id){
 
 async function cancelBookingPersonal(id){
   if(!confirm('Cancel this booking and notify the client it was cancelled for personal reasons?')) return;
+  const viaWa = notifyByWhatsApp(adminBookingsById.get(id), 'cancelled');
   const card = document.getElementById('card-'+id);
   if(card){ card.style.opacity='0.5'; card.style.pointerEvents='none'; }
 
@@ -2264,7 +2712,7 @@ async function cancelBookingPersonal(id){
     const { error } = await sb.from('bookings').delete().eq('id', id);
     if(error) throw error;
 
-    if(booking && booking.email){
+    if(!viaWa && booking && booking.channel !== 'whatsapp' && booking.email){
       try {
         await sendBookingEmail(booking, 'admin_cancelled');
       } catch(emailErr){

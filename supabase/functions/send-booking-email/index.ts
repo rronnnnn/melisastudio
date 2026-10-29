@@ -196,7 +196,8 @@ function customerEmail(lang: Lang, kind: string, c: Ctx): { subject: string; htm
     };
   }
 
-  if (kind === "admin_cancelled") {
+  // Free Slot removes an approved booking, so the client reads it as a cancellation.
+  if (kind === "admin_cancelled" || kind === "freed") {
     const K = L.admin_cancelled;
     return {
       subject: K.subject,
@@ -208,7 +209,7 @@ function customerEmail(lang: Lang, kind: string, c: Ctx): { subject: string; htm
     };
   }
 
-  // "Freed" (studio frees the slot) reads the same as a refusal to the customer.
+  // Rejected: only for pending → rejected.
   const K = L.rejected;
   return {
     subject: K.subject,
@@ -259,8 +260,8 @@ Deno.serve(async (req) => {
       subject = `New Booking Request — ${svcLabel} — ${booking.date} at ${booking.time}`;
       html = `<div style="font-family:Arial,sans-serif;color:#5A4636;line-height:1.6;">
   <p>A new booking request has come in:</p>
-  <p><strong>Customer:</strong> ${booking.name}<br><strong>Phone:</strong> ${booking.phone}<br><strong>Email:</strong> ${booking.email}<br><strong>Service:</strong> ${svcLabel}<br><strong>Date:</strong> ${booking.date}<br><strong>Time:</strong> ${booking.time}${booking.options ? `<br><strong>Options:</strong> ${booking.options}` : ""}</p>
-  <p>Please review and approve or reject it in the admin panel.</p>
+  <p><strong>Customer:</strong> ${booking.name}<br><strong>Phone:</strong> ${booking.phone}<br><strong>Email:</strong> ${booking.email || "—"}<br>${booking.channel === "whatsapp" ? `<strong>Booked via:</strong> WhatsApp (code ${booking.booking_code})<br>` : ""}<strong>Service:</strong> ${svcLabel}<br><strong>Date:</strong> ${booking.date}<br><strong>Time:</strong> ${booking.time}${booking.options ? `<br><strong>Options:</strong> ${booking.options}` : ""}</p>
+  <p>Please review and approve or reject it in the admin panel.${booking.channel === "whatsapp" ? " The client will message you on WhatsApp with this code; reply from the panel." : ""}</p>
 </div>`;
     }
   } else {
@@ -281,7 +282,8 @@ Deno.serve(async (req) => {
   }
 
   // Primary message (customer-facing for approve/reject, studio for cancel).
-  const messages = [{ to, subject, html }];
+  // WhatsApp bookings may have no email: then there is simply no customer email.
+  const messages = to ? [{ to, subject, html }] : [];
 
   // On approval/rejection, also notify the studio side (pedicure worker for
   // pedicure bookings, otherwise the main studio inbox).
@@ -312,6 +314,12 @@ Deno.serve(async (req) => {
   // Send all emails in parallel so the studio copy adds no latency.
   const responses = await Promise.all(messages.map(sendEmail));
 
+  if (!responses.length) {
+    return new Response(JSON.stringify({ skipped: "no recipient" }), {
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      status: 200,
+    });
+  }
   // Base the HTTP response on the primary (customer) email.
   const primary = responses[0];
   const data = await primary.json();
