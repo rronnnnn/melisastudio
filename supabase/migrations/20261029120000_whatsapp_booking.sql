@@ -13,8 +13,10 @@ alter table public.bookings
 alter table public.bookings
   add constraint bookings_channel_check check (channel in ('email', 'whatsapp'));
 
--- Short code (e.g. SM-X7K2) the client sends on WhatsApp so Melisa can match the chat.
--- Unique when present; old rows have none.
+-- booking_code: UNUSED. Planned as a short code (SM-X7K2) to match WhatsApp chats, then
+-- dropped from the app before launch. Nothing reads or writes it; safe to drop later with
+--   drop index if exists bookings_booking_code_key;
+--   alter table public.bookings drop column if exists booking_code;
 create unique index if not exists bookings_booking_code_key
   on public.bookings (booking_code);
 

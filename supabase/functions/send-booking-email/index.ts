@@ -260,8 +260,8 @@ Deno.serve(async (req) => {
       subject = `New Booking Request — ${svcLabel} — ${booking.date} at ${booking.time}`;
       html = `<div style="font-family:Arial,sans-serif;color:#5A4636;line-height:1.6;">
   <p>A new booking request has come in:</p>
-  <p><strong>Customer:</strong> ${booking.name}<br><strong>Phone:</strong> ${booking.phone}<br><strong>Email:</strong> ${booking.email || "—"}<br>${booking.channel === "whatsapp" ? `<strong>Booked via:</strong> WhatsApp (code ${booking.booking_code})<br>` : ""}<strong>Service:</strong> ${svcLabel}<br><strong>Date:</strong> ${booking.date}<br><strong>Time:</strong> ${booking.time}${booking.options ? `<br><strong>Options:</strong> ${booking.options}` : ""}</p>
-  <p>Please review and approve or reject it in the admin panel.${booking.channel === "whatsapp" ? " The client will message you on WhatsApp with this code; reply from the panel." : ""}</p>
+  <p><strong>Customer:</strong> ${booking.name}<br><strong>Phone:</strong> ${booking.phone}<br><strong>Email:</strong> ${booking.email || "—"}<br>${booking.channel === "whatsapp" ? `<strong>Booked via:</strong> WhatsApp<br>` : ""}<strong>Service:</strong> ${svcLabel}<br><strong>Date:</strong> ${booking.date}<br><strong>Time:</strong> ${booking.time}${booking.options ? `<br><strong>Options:</strong> ${booking.options}` : ""}</p>
+  <p>Please review and approve or reject it in the admin panel.${booking.channel === "whatsapp" ? " The client will message you on WhatsApp; reply from the panel." : ""}</p>
 </div>`;
     }
   } else {
