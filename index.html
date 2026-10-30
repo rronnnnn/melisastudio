@@ -2,11 +2,22 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <title>Studio Melisa — Nails & Brows</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta name="apple-mobile-web-app-title" content="Studio Melisa">
+<link rel="manifest" id="manifestLink" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-title" id="appTitleMeta" content="Studio Melisa">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#F6EEE6">
+<script>
+  // ?admin installs as its own app ("Melisa Admin", opens on the panel).
+  // Must run before the manifest is fetched, so it stays inline in <head>.
+  if(new URLSearchParams(location.search).has('admin')){
+    document.getElementById('manifestLink').href = '/admin.webmanifest';
+    document.getElementById('appTitleMeta').content = 'Melisa Admin';
+  }
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Parisienne&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -31,7 +42,9 @@
   }
 
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
+  html,body{margin:0;padding:0;touch-action:manipulation;}
+  /* iOS zooms into any field under 16px on focus */
+  input,select,textarea{font-size:16px;}
   body{
     font-family:'Quicksand',sans-serif;
     color:var(--espresso);
@@ -134,7 +147,7 @@
 
   .field{margin-bottom:14px;}
   .field label{display:block;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--cocoa);margin-bottom:6px;font-weight:600;}
-  .field input{width:100%;padding:13px 16px;border-radius:16px;font-family:'Quicksand',sans-serif;font-size:15px;color:var(--espresso);
+  .field input{width:100%;padding:13px 16px;border-radius:16px;font-family:'Quicksand',sans-serif;font-size:16px;color:var(--espresso);
     background:rgba(255,255,255,.5);border:1px solid var(--glass-line);outline:none;transition:.25s;}
   .field input::placeholder{color:#b9a594;}
   .field input:focus{background:rgba(255,255,255,.78);border-color:var(--rose-deep);box-shadow:0 0 0 4px rgba(217,169,158,.22);}
@@ -270,7 +283,7 @@
   .btn-wa-book{display:block;width:100%;margin-top:12px;text-align:center;text-decoration:none;}
   /* phone: country code + number side by side */
   .phone-row{display:flex;gap:8px;}
-  .phone-row select{flex:0 0 auto;width:auto;padding:13px 10px;border-radius:16px;font-family:'Quicksand',sans-serif;font-size:15px;
+  .phone-row select{flex:0 0 auto;width:auto;padding:13px 10px;border-radius:16px;font-family:'Quicksand',sans-serif;font-size:16px;
     color:var(--espresso);background:rgba(255,255,255,.55);border:1px solid var(--glass-line);outline:none;}
   .phone-row select:focus{background:rgba(255,255,255,.78);border-color:var(--rose-deep);box-shadow:0 0 0 4px rgba(217,169,158,.22);}
   .phone-row input{flex:1;min-width:0;}
@@ -310,11 +323,17 @@
   .admin-login h3{font-family:'Cormorant Garamond',serif;font-size:24px;margin:0 0 8px;}
   .admin-login p{font-size:13px;color:var(--cocoa);margin:0 0 24px;}
   .admin-login input{width:100%;padding:13px 16px;border-radius:16px;font-family:'Quicksand',sans-serif;
-    font-size:15px;color:var(--espresso);background:rgba(255,255,255,.6);border:1px solid var(--glass-line);
+    font-size:16px;color:var(--espresso);background:rgba(255,255,255,.6);border:1px solid var(--glass-line);
     outline:none;margin-bottom:12px;transition:.25s;}
   .admin-login input:focus{background:rgba(255,255,255,.9);border-color:var(--rose-deep);}
   .admin-login .btn{width:100%;}
   .admin-err{color:#b3604f;font-size:13px;margin-top:8px;}
+  .admin-topbar{display:flex;justify-content:flex-end;margin:-20px 0 16px;}
+  .push-box{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+    padding:14px 18px;margin-bottom:24px;font-size:13.5px;color:var(--cocoa-deep);}
+  .push-box .push-msg{flex:1;min-width:200px;line-height:1.45;}
+  .push-box .push-on{font-weight:700;color:#5C8A5C;}
+  .push-box ol{margin:6px 0 0;padding-left:20px;}
 
   .booking-card{background:rgba(255,255,255,.5);border:1px solid var(--glass-line);border-radius:18px;
     padding:20px 22px;margin-bottom:14px;transition:.2s;}
@@ -370,7 +389,7 @@
   .admin-datefilter{display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
   .admin-datefilter label{font-size:12px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--cocoa);}
   .admin-datefilter input[type=date]{padding:7px 12px;border-radius:14px;font-family:'Quicksand',sans-serif;
-    font-size:14px;color:var(--espresso);background:rgba(255,255,255,.55);border:1px solid var(--glass-line);outline:none;}
+    font-size:16px;color:var(--espresso);background:rgba(255,255,255,.55);border:1px solid var(--glass-line);outline:none;}
   .admin-filter{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
   .filter-btn{padding:7px 18px;border:none;border-radius:20px;font-family:'Quicksand',sans-serif;
     font-size:13px;font-weight:600;cursor:pointer;background:var(--glass-strong);color:var(--cocoa-deep);
@@ -478,7 +497,8 @@
     <!-- Login form -->
     <div id="adminLogin" class="glass admin-login">
       <h3>Welcome, Melisa</h3>
-      <p>Enter your password to see your bookings</p>
+      <p>Log in to see your bookings</p>
+      <input type="email" id="adminEmail" placeholder="Email" autocomplete="username" autocapitalize="none" spellcheck="false">
       <input type="password" id="adminPass" placeholder="Password" autocomplete="current-password">
       <button class="btn btn-primary" id="adminLoginBtn">Log in</button>
       <div class="admin-err" id="adminErr"></div>
@@ -486,6 +506,11 @@
 
     <!-- Bookings view (hidden until logged in) -->
     <div id="adminBookings" style="display:none;">
+      <div class="admin-topbar"><button class="filter-btn" id="adminLogoutTop">Log out</button></div>
+
+      <!-- Push notifications for new bookings (state filled in by renderPushBox) -->
+      <div id="pushBox" class="glass push-box" style="display:none;"></div>
+
       <!-- Block Days (main admin only — hidden for the pedicure role) -->
       <div id="adminBlockDays">
         <div class="admin-section-title">Block Days</div>
@@ -795,15 +820,16 @@
 /* ============================================================
    CONFIGURATION
    ============================================================ */
-const ADMIN_PASSWORD = "melisab2026"; // change this to whatever Melisa wants
+/* Admin login is Supabase Auth (email + password). The panel role comes from the
+   user's app_metadata.admin_role, which only the service role can set:
+   'main' = Melisa (full admin), 'pedicure' = pedicure worker (pedicure only). */
+const ADMIN_ROLES = ['main', 'pedicure'];
+/* No pedicure worker yet: Melisa's main view lists pedicure bookings too.
+   Set to false once the pedicure worker has her own login. */
+const MAIN_HANDLES_PEDICURE = true;
 
-/* ============================================================
-   PEDICURE ADMIN PASSWORD  ← change this later
-   Second admin role: the pedicure worker logs in with this
-   password and sees a simplified panel (pedicure bookings only).
-   ============================================================ */
-const PEDICURE_PASSWORD = "pedicure123";
-/* ============================================================ */
+/* Web Push — public VAPID key (the private half is an edge function secret) */
+const VAPID_PUBLIC_KEY = "BI2mYCj0BAkzNY5IQPHBD2x5FB8aJ1Sk_1IDenQNbvwzzRl5Ncuhy9hIPDfs4X_6nFoHvr_P9LW3as9ZH3lxzwk";
 
 /* Supabase — fill in your project URL and anon key */
 const SUPABASE_URL  = "https://dnhtvflvjxcdzkqpuhwh.supabase.co";
@@ -814,6 +840,9 @@ const STUDIO_EMAIL = "onboarding@resend.dev"; // replace with verified domain in
 /* ============================================================ */
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+/* No pinch-zoom (iOS Safari ignores user-scalable=no in the viewport tag). */
+['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t, e=>e.preventDefault(), { passive:false }));
 
 /* ============================================================
    WHATSAPP — click-to-chat (wa.me) only: no API, nothing sent automatically.
@@ -2389,12 +2418,14 @@ const BLK_CLOSE_MIN = 22*60;           // Block Hours grid runs 08:00–22:00 (l
 function initAdmin(){
   $('adminLoginBtn').addEventListener('click', handleAdminLogin);
   $('adminPass').addEventListener('keydown', e=>{ if(e.key==='Enter') handleAdminLogin(); });
-  $('adminLogout').addEventListener('click',()=>{
-    adminRole = null;
-    sessionStorage.removeItem('melisaAdminRole');
-    $('adminBookings').style.display='none';
-    $('adminLogin').style.display='block';
-    $('adminPass').value='';
+  $('adminEmail').addEventListener('keydown', e=>{ if(e.key==='Enter') $('adminPass').focus(); });
+  $('adminLogout').addEventListener('click', handleAdminLogout);
+  $('adminLogoutTop').addEventListener('click', handleAdminLogout);
+  // Session expired / signed out in another tab → back to the login form.
+  sb.auth.onAuthStateChange((event)=>{ if(event === 'SIGNED_OUT') showAdminLogin(); });
+  // Tapping a notification while the panel is open: refresh the list.
+  navigator.serviceWorker?.addEventListener('message', e=>{
+    if(e.data?.type === 'booking-push' && adminRole) loadAdminBookings();
   });
   // Only the status tabs (data-filter). The Working-hours service tabs share the
   // .admin-filter class but use data-svc, and must not touch the booking filter.
@@ -2423,30 +2454,158 @@ function initAdmin(){
   $('blkPrevM').addEventListener('click', ()=>shiftBlockMonth(-1));
   $('blkNextM').addEventListener('click', ()=>shiftBlockMonth(1));
 
-  // Restore an existing session (role kept in sessionStorage)
-  const savedRole = sessionStorage.getItem('melisaAdminRole');
-  if(savedRole === 'main' || savedRole === 'pedicure'){
-    adminRole = savedRole;
-    enterAdmin();
-  }
+  // Restore an existing session (supabase-js keeps it in localStorage)
+  sb.auth.getSession().then(({ data })=>{
+    if(data.session) startAdminSession(data.session);
+  });
 }
 
-function handleAdminLogin(){
-  const pass = $('adminPass').value;
-  if(pass === ADMIN_PASSWORD){
-    adminRole = 'main';
-  } else if(pass === PEDICURE_PASSWORD){
-    adminRole = 'pedicure';
-  } else {
-    $('adminErr').textContent='Incorrect password. Try again.';
-    $('adminPass').value='';
+function roleOf(session){
+  const r = session?.user?.app_metadata?.admin_role;
+  return ADMIN_ROLES.includes(r) ? r : null;
+}
+
+async function startAdminSession(session){
+  const role = roleOf(session);
+  if(!role){
+    await sb.auth.signOut();
+    $('adminErr').textContent = 'This account doesn\'t have admin access.';
+    return;
+  }
+  adminRole = role;
+  $('adminErr').textContent = '';
+  enterAdmin();
+}
+
+async function handleAdminLogin(){
+  const email = $('adminEmail').value.trim();
+  const password = $('adminPass').value;
+  if(!email || !password){
+    $('adminErr').textContent = 'Enter your email and password.';
+    return;
+  }
+  const btn = $('adminLoginBtn');
+  btn.disabled = true;
+  $('adminErr').textContent = '';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
+  btn.disabled = false;
+  if(error){
+    $('adminErr').textContent = error.message === 'Invalid login credentials'
+      ? 'Incorrect email or password. Try again.'
+      : 'Could not log in: ' + error.message;
+    $('adminPass').value = '';
     $('adminPass').focus();
     return;
   }
-  // Persist the role alongside the auth so a reload keeps the session
-  sessionStorage.setItem('melisaAdminRole', adminRole);
-  $('adminErr').textContent='';
-  enterAdmin();
+  $('adminPass').value = '';
+  startAdminSession(data.session);
+}
+
+async function handleAdminLogout(){
+  // Stop pushes to this device first (needs the session for RLS).
+  await removePushSubscription().catch(e=>console.error('Could not remove push subscription:', e));
+  await sb.auth.signOut();
+  showAdminLogin();
+}
+
+function showAdminLogin(){
+  adminRole = null;
+  $('adminBookings').style.display='none';
+  $('pushBox').style.display='none';
+  $('adminLogin').style.display='block';
+  $('adminPass').value='';
+}
+
+/* ---- Push notifications (new bookings) ----
+   iPhone only delivers web push to an app added to the Home Screen (iOS 16.4+),
+   so plain Safari gets instructions instead of the button. */
+function isIOS(){
+  return /iPhone|iPad|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+function isStandalone(){
+  return navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
+}
+function pushSupported(){
+  return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+}
+function urlB64ToUint8(b64){
+  const pad = '='.repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(raw, c => c.charCodeAt(0));
+}
+async function pushRegistration(){
+  return navigator.serviceWorker.register('/sw.js', { scope: '/' });
+}
+// Store (or re-store) this device's subscription for the signed-in admin.
+async function savePushSubscription(sub){
+  const j = sub.toJSON();
+  const { data: { user } } = await sb.auth.getUser();
+  if(!user) throw new Error('Not signed in');
+  // Same endpoint = same device; replace rather than duplicate.
+  await sb.from('push_subscriptions').delete().eq('endpoint', j.endpoint);
+  const { error } = await sb.from('push_subscriptions')
+    .insert({ endpoint: j.endpoint, keys: j.keys, admin_id: user.id });
+  if(error) throw error;
+}
+async function removePushSubscription(){
+  if(!pushSupported()) return;
+  const reg = await navigator.serviceWorker.getRegistration('/');
+  const sub = reg && await reg.pushManager.getSubscription();
+  if(!sub) return;
+  await sb.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+  await sub.unsubscribe();
+}
+async function enablePush(){
+  const box = $('pushBox');
+  const btn = box.querySelector('button');
+  if(btn) btn.disabled = true;
+  try {
+    // Ask for permission first, straight from the tap (iOS requires a user gesture).
+    const perm = await Notification.requestPermission();
+    if(perm !== 'granted'){ renderPushBox(); return; }
+    const reg = await pushRegistration();
+    await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlB64ToUint8(VAPID_PUBLIC_KEY),
+    });
+    await savePushSubscription(sub);
+  } catch(e){
+    console.error('Enabling notifications failed:', e);
+    alert('Could not turn on notifications. Try again.');
+  }
+  renderPushBox();
+}
+async function renderPushBox(){
+  const box = $('pushBox');
+  if(!adminRole){ box.style.display='none'; return; }
+  if(isIOS() && !isStandalone()){
+    box.innerHTML = `<div class="push-msg"><strong>Get a notification for every new booking</strong>
+      <ol><li>Tap the Share button <span aria-hidden="true">⎋</span> in Safari</li>
+      <li>Choose <strong>Add to Home Screen</strong>, then <strong>Add</strong></li>
+      <li>Open <strong>Melisa Admin</strong> from your Home Screen, log in and tap <strong>Enable notifications</strong></li></ol></div>`;
+    box.style.display='';
+    return;
+  }
+  if(!pushSupported()){ box.style.display='none'; return; }
+  let sub = null;
+  try {
+    const reg = await navigator.serviceWorker.getRegistration('/');
+    sub = reg && await reg.pushManager.getSubscription();
+  } catch(_){}
+  if(sub && Notification.permission === 'granted'){
+    // Re-store in case the server dropped it (e.g. after a failed delivery).
+    savePushSubscription(sub).catch(e=>console.error('Could not save push subscription:', e));
+    box.innerHTML = '<div class="push-msg"><span class="push-on">Notifications on ✓</span> — you\'ll get one for every new booking.</div>';
+  } else if(Notification.permission === 'denied'){
+    box.innerHTML = '<div class="push-msg">Notifications are blocked for this app. Turn them on in Settings → Notifications → Melisa Admin, then reopen the app.</div>';
+  } else {
+    box.innerHTML = '<div class="push-msg">Get a notification on this device for every new booking.</div>'
+      + '<button class="btn btn-primary" id="pushEnableBtn">Enable notifications</button>';
+    $('pushEnableBtn').addEventListener('click', enablePush);
+  }
+  box.style.display='';
 }
 
 // Show the logged-in admin view appropriate to the current role.
@@ -2460,6 +2619,7 @@ function enterAdmin(){
   blockCalDate = new Date(); blockCalDate.setDate(1);   // open on the current month
   renderBlockCalendar();
   loadAdminBookings();
+  renderPushBox();
 }
 
 async function loadAdminBookings(){
@@ -2468,11 +2628,11 @@ async function loadAdminBookings(){
 
   try {
     let query = sb.from('bookings').select('*').order('date').order('time');
-    // Pedicure worker only ever sees pedicure bookings; the main admin never
-    // sees pedicure (that's the pedicure worker's separate panel).
+    // Pedicure worker only ever sees pedicure bookings. Until there is one,
+    // the main admin handles pedicure too (MAIN_HANDLES_PEDICURE).
     if(adminRole === 'pedicure'){
       query = query.eq('service', 'pedicure');
-    } else {
+    } else if(!MAIN_HANDLES_PEDICURE){
       query = query.neq('service', 'pedicure');
     }
     if(adminFilter === 'whatsapp'){
