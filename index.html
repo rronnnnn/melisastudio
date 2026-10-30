@@ -796,6 +796,14 @@
           <p class="cancel-sub">We hope to see you again soon.</p>
         </div>
 
+        <div id="cancelTooLate" class="cancel-state" style="display:none;">
+          <h3 class="cancel-title" data-i18n="cx_too_late_title">Too late to cancel online</h3>
+          <p class="cancel-sub" data-i18n="cx_too_late_body">Appointments can be cancelled online up to 24 hours before. Please contact the studio.</p>
+          <div class="cancel-actions">
+            <button class="btn btn-primary" onclick="location.href='https://studiomelisa.com'">Back to Studio Melisa</button>
+          </div>
+        </div>
+
         <div id="cancelInvalid" class="cancel-state" style="display:none;">
           <h3 class="cancel-title">This link is no longer valid</h3>
           <p class="cancel-sub">This cancellation link is no longer valid. Your appointment may have already been cancelled.</p>
@@ -1126,6 +1134,10 @@ const I18N = {
     ph_email:"Email (opsionale)", btn_wa:"Rezervo me WhatsApp",
     err_email_needed:"Shkruani email-in tuaj për të rezervuar me email.",
     err_save:"Rezervimi nuk u ruajt. Ju lutemi provoni përsëri.",
+    err_slot_taken:"Ky orar sapo u zu. Ju lutemi zgjidhni një tjetër.",
+    err_too_many_pending:"Keni tashmë 3 rezervime që presin konfirmim. Ju lutemi prisni përgjigjen tonë para se të rezervoni përsëri.",
+    cx_too_late_title:"Është vonë për ta anuluar online",
+    cx_too_late_body:"Terminet anulohen online deri 24 orë përpara. Ju lutemi kontaktoni studion.",
     wa_confirm_title:"Edhe një hap!",
     wa_confirm_msg:"Dërgoni mesazhin në WhatsApp te Studio Melisa për ta përfunduar rezervimin. Përgjigjen do ta merrni në WhatsApp.",
     wa_open:"Hap WhatsApp",
@@ -1166,6 +1178,10 @@ const I18N = {
     ph_email:"Email (optional)", btn_wa:"Book via WhatsApp",
     err_email_needed:"Enter your email to book via email.",
     err_save:"Your booking couldn't be saved. Please try again.",
+    err_slot_taken:"This time was just taken. Please pick another.",
+    err_too_many_pending:"You already have 3 bookings waiting for confirmation. Please wait for our reply before booking again.",
+    cx_too_late_title:"Too late to cancel online",
+    cx_too_late_body:"Appointments can be cancelled online up to 24 hours before. Please contact the studio.",
     wa_confirm_title:"One last step!",
     wa_confirm_msg:"Send the WhatsApp message to Studio Melisa to complete your booking. You'll get the answer on WhatsApp.",
     wa_open:"Open WhatsApp",
@@ -1206,6 +1222,10 @@ const I18N = {
     ph_email:"Е-пошта (опционално)", btn_wa:"Резервирај преку WhatsApp",
     err_email_needed:"Внесете го вашиот мејл за да резервирате преку мејл.",
     err_save:"Резервацијата не беше зачувана. Ве молиме обидете се повторно.",
+    err_slot_taken:"Овој термин штотуку беше зафатен. Ве молиме изберете друг.",
+    err_too_many_pending:"Веќе имате 3 резервации што чекаат потврда. Ве молиме почекајте го нашиот одговор пред повторно да резервирате.",
+    cx_too_late_title:"Предоцна е за откажување онлајн",
+    cx_too_late_body:"Терминот може да се откаже онлајн најдоцна 24 часа однапред. Ве молиме контактирајте го студиото.",
     wa_confirm_title:"Уште еден чекор!",
     wa_confirm_msg:"Испратете ја пораката на WhatsApp до Studio Melisa за да ја завршите резервацијата. Одговорот ќе го добиете на WhatsApp.",
     wa_open:"Отвори WhatsApp",
@@ -1578,7 +1598,7 @@ if(cancelToken){
 }
 
 function showCancelState(id){
-  ['cancelLoading','cancelConfirm','cancelDone','cancelInvalid','cancelError']
+  ['cancelLoading','cancelConfirm','cancelDone','cancelTooLate','cancelInvalid','cancelError']
     .forEach(s=>{ const el=$(s); if(el) el.style.display = (s===id) ? 'block' : 'none'; });
 }
 
@@ -1586,21 +1606,27 @@ async function initCancelPage(token){
   $('cancelPage').classList.add('show');
   showCancelState('cancelLoading');
 
+  // Only this booking's name/service/date/time come back, and only while it can
+  // still be cancelled (pending or approved). can_cancel = more than 24h to go.
   let booking;
   try {
-    const { data, error } = await sb
-      .from('bookings').select('*').eq('cancel_token', token).maybeSingle();
+    const { data, error } = await sb.rpc('get_booking_by_token', { p_token: token });
     if(error) throw error;
     booking = data;
   } catch(e){
     console.error('Could not look up booking:', e);
-    showCancelState('cancelError');
+    // a malformed token is rejected as invalid input: same as "no such booking"
+    showCancelState(e && e.code === '22P02' ? 'cancelInvalid' : 'cancelError');
     return;
   }
 
   // No matching booking → already cancelled or invalid token
   if(!booking){
     showCancelState('cancelInvalid');
+    return;
+  }
+  if(!booking.can_cancel){
+    showCancelState('cancelTooLate');
     return;
   }
 
@@ -1627,13 +1653,13 @@ async function initCancelPage(token){
     btn.disabled = true;
     btn.textContent = 'Cancelling…';
     try {
-      const { error } = await sb.from('bookings').delete().eq('cancel_token', token);
+      // The studio is emailed by the database once the cancellation goes through.
+      const { data, error } = await sb.rpc('cancel_booking', { p_token: token });
       if(error) throw error;
-
-      // Let Melisa know — non-blocking, never block the success message
-      try { await sendCancellationNotice(booking, svcLabel, prettyDate); }
-      catch(notifyErr){ console.error('Studio notification failed:', notifyErr); }
-
+      if(!data.ok){
+        showCancelState(data.reason === 'too_late' ? 'cancelTooLate' : 'cancelInvalid');
+        return;
+      }
       showCancelState('cancelDone');
     } catch(e){
       console.error('Could not cancel booking:', e);
@@ -1642,42 +1668,6 @@ async function initCancelPage(token){
       showCancelState('cancelError');
     }
   });
-}
-
-// Notify the studio (STUDIO_EMAIL) that a customer cancelled.
-async function sendCancellationNotice(booking, svcLabel, prettyDate){
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/send-booking-email`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${SUPABASE_ANON}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      booking: { ...booking, date: prettyDate },
-      newStatus: "cancelled",
-      services: SERVICES,
-    }),
-  });
-  if(!res.ok){
-    const txt = await res.text().catch(()=> '');
-    throw new Error('Notification failed '+res.status+': '+txt);
-  }
-}
-
-// Notify the studio (STUDIO_EMAIL / pedicure worker) of a new booking request.
-async function sendRequestNotice(booking){
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/send-booking-email`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${SUPABASE_ANON}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ booking, newStatus: "request", services: SERVICES }),
-  });
-  if(!res.ok){
-    const txt = await res.text().catch(()=> '');
-    throw new Error('Request notification failed '+res.status+': '+txt);
-  }
 }
 
 /* ============================================================
@@ -2007,13 +1997,9 @@ async function fetchMonthAvailability(y, m){
   };
 
   try {
+    // pending + approved only, and only what slot blocking needs (no personal data)
     const bookings = await fetchAllRows(() => sb
-      .from('bookings')
-      .select('date, time, status, service, duration_minutes')
-      .gte('date', startStr).lte('date', endStr)
-      .in('service', servicesToCheck)
-      .in('status', ['pending','approved'])
-      .order('id'));
+      .rpc('get_availability', { p_from: startStr, p_to: endStr, p_services: servicesToCheck }));
     bookings.forEach(b=>{ (bookingsByDate[b.date] ||= []).push(b); });
 
     const bh = await fetchAllRows(() => {
@@ -2108,12 +2094,9 @@ async function loadAndRenderSlots(){
       servicesToCheck = [state.service];
     }
 
+    const ds = dateStr(state.date);
     const { data, error } = await sb
-      .from('bookings')
-      .select('time, status, service, duration_minutes')
-      .eq('date', dateStr(state.date))
-      .in('service', servicesToCheck)
-      .in('status', ['pending','approved']);
+      .rpc('get_availability', { p_from: ds, p_to: ds, p_services: servicesToCheck });
 
     if(error) throw error;
     dayBookings = data || [];
@@ -2264,7 +2247,6 @@ function wizardBooking(channel){
     phone:     currentPhone(),
     email:     normalizeEmail($('fEmail').value) || null,
     options:   optionsText,
-    status:    'pending',
     channel,
     lang:      currentLang,  // language the customer booked in; drives email language
     // Eyebrows reuses these columns: service_type = brow service, nail_type = coloring answer.
@@ -2272,6 +2254,39 @@ function wizardBooking(channel){
     service_type: (isMulti || state.service==='eyebrows') ? state.serviceType : null,
     duration_minutes: currentDuration()
   };
+}
+
+/* Save through create_booking: the database re-checks the slot (same rules as
+   the calendar), limits pending bookings per phone, forces status 'pending' and
+   sends the studio / "awaiting confirmation" emails itself.
+   Resolves to { ok:true, id } or { ok:false, message } (already translated). */
+async function saveBooking(b){
+  let res;
+  try {
+    const { data, error } = await sb.rpc('create_booking', {
+      p_service: b.service, p_date: b.date, p_time: b.time, p_name: b.name, p_phone: b.phone,
+      p_email: b.email, p_options: b.options, p_channel: b.channel, p_lang: b.lang,
+      p_nail_type: b.nail_type, p_service_type: b.service_type, p_duration_minutes: b.duration_minutes,
+    });
+    if(error) throw error;
+    res = data;
+  } catch(e){
+    console.error('Could not save booking:', e);
+    return { ok:false, message: t('err_save') };
+  }
+  if(res && res.ok) return res;
+  if(res && res.reason === 'invalid') console.error('Booking rejected, invalid field:', res.field);
+  const message = res && res.reason === 'slot_taken' ? t('err_slot_taken')
+                : res && res.reason === 'too_many_pending' ? t('err_too_many_pending')
+                : t('err_save');
+  return { ok:false, reason: res && res.reason, message };
+}
+
+// The slot went while the client was on the review step: back to the times, refreshed.
+function backToTimes(message){
+  state.time = null;
+  goStep('time');            // reloads the slots
+  $('err3').textContent = message;
 }
 
 /* ---- confirm: save booking to Supabase, then notify the studio by email ---- */
@@ -2290,47 +2305,15 @@ $('emailBtn').addEventListener('click', async ()=>{
   btn.disabled = true;
   btn.textContent = t('btn_saving');
 
-  const duration = currentDuration();
-  const bookingData = wizardBooking('email');
-
-  let saved = null;
-  try {
-    // Insert and read the row back so we capture the DB-generated cancel_token.
-    // The token travels with the booking and is later used to build the
-    // cancellation link in the approval email (sent on approve).
-    const { data, error } = await sb
-      .from('bookings').insert(bookingData).select().single();
-    if(error) throw error;
-    saved = data;
-    if(saved) console.log('Booking saved with cancel_token:', saved.cancel_token);
-  } catch(e){
-    console.error('Could not save booking:', e);
-    // Don't block the user — still notify the studio and confirm below.
-  }
-
-  // Notify the studio (Melisa) of the new request via the edge function.
-  // Eyebrows shows a start–end range; other flows show the start time.
-  // Display-only +1 to match renderSummary's dispDur (stored duration_minutes stays raw).
-  const timeVal = state.service==='eyebrows' ? fmtTimeRange(state.time, duration+1) : state.time;
-  try {
-    await sendRequestNotice({ ...(saved || bookingData), date: fmtDate(state.date), time: timeVal });
-  } catch(e){
-    console.error('Studio notification failed:', e);
-  }
-
-  // Let the customer know their request was received while they wait for approval.
-  const emailTarget = saved || bookingData;
-  if(emailTarget && emailTarget.email){
-    try {
-      // ISO date: the edge function localizes it to the customer's language.
-      await sendBookingEmail({ ...emailTarget, date: dateStr(state.date), time: timeVal }, 'pending_confirmation');
-    } catch(e){
-      console.error('Customer notification failed:', e);
-    }
-  }
-
+  $('errBook').textContent='';
+  const saved = await saveBooking(wizardBooking('email'));
   btn.disabled = false;
   btn.textContent = t('btn_email');
+  if(!saved.ok){
+    if(saved.reason === 'slot_taken') backToTimes(saved.message);
+    else $('errBook').textContent = saved.message;
+    return;
+  }
   showConfirmation();
 });
 
@@ -2345,19 +2328,16 @@ $('waBtn').addEventListener('click', async ()=>{
   label.textContent = t('btn_saving');
 
   const bookingData = wizardBooking('whatsapp');
-  let saved;
-  try {
-    const { data, error } = await sb.from('bookings').insert(bookingData).select().single();
-    if(error) throw error;
-    saved = data;
-  } catch(e){
-    // Unlike email, the client must not be sent to WhatsApp for a booking that doesn't exist.
-    console.error('Could not save WhatsApp booking:', e);
-    $('errBook').textContent = t('err_save');
+  const result = await saveBooking(bookingData);
+  if(!result.ok){
+    // The client must not be sent to WhatsApp for a booking that doesn't exist.
     btn.disabled = false;
     label.textContent = t('btn_wa');
+    if(result.reason === 'slot_taken') backToTimes(result.message);
+    else $('errBook').textContent = result.message;
     return;
   }
+  const saved = bookingData;   // the message is built from what the client chose
 
   const lang = waLang(currentLang);
   const dispTime = state.service==='eyebrows' ? fmtTimeRange(state.time, bookingData.duration_minutes+1) : state.time;
@@ -2372,11 +2352,8 @@ $('waBtn').addEventListener('click', async ()=>{
   $('waOverlay').classList.add('show');
   document.documentElement.style.overflow='hidden';
   document.body.style.overflow='hidden';
-
-  // Studio inbox still hears about it (non-blocking). The client gets no email:
+  // The studio inbox is emailed by the database. The client gets no email:
   // their answers come on WhatsApp.
-  sendRequestNotice({ ...saved, date: fmtDate(state.date), time: dispTime })
-    .catch(e=>console.error('Studio notification failed:', e));
 });
 function closeWaConfirmation(){
   $('waOverlay').classList.remove('show');
@@ -2777,17 +2754,12 @@ async function updateBooking(id, newStatus){
     const { error } = await sb.from('bookings').update(patch).eq('id', id);
     if(error) throw error;
 
-    // Fetch booking details and notify the customer by email (non-blocking).
+    // Email bookings: the customer is emailed (by id; the server checks the new status).
     // WhatsApp bookings were notified on WhatsApp above and never get email.
-    try {
-      const { data: booking, error: fErr } = await sb
-        .from('bookings').select('*').eq('id', id).single();
-      if(fErr) throw fErr;
-      if(booking && booking.channel !== 'whatsapp' && booking.email && (newStatus==='approved' || newStatus==='rejected')){
-        await sendBookingEmail(booking, newStatus);
-      }
-    } catch(emailErr){
-      console.error('Email notification failed:', emailErr);
+    const b = adminBookingsById.get(id);
+    if(b && b.channel !== 'whatsapp' && b.email){
+      try { await adminEmail(id, newStatus); }
+      catch(emailErr){ console.error('Email notification failed:', emailErr); }
     }
 
     await loadAdminBookings();
@@ -2801,83 +2773,48 @@ async function updateBooking(id, newStatus){
 async function freeSlot(id){
   if(!confirm('Are you sure you want to remove this booking and free the slot?')) return;
   // Freeing an approved booking reads to the client as a cancellation.
-  const viaWa = notifyByWhatsApp(adminBookingsById.get(id), 'cancelled');
-  const card = document.getElementById('card-'+id);
-  if(card){ card.style.opacity='0.5'; card.style.pointerEvents='none'; }
-
-  try {
-    // Fetch the full row first so we still have the booking data to email
-    // the customer with after it's deleted.
-    const { data: booking, error: fErr } = await sb
-      .from('bookings').select('*').eq('id', id).single();
-    if(fErr) throw fErr;
-
-    const { error } = await sb.from('bookings').delete().eq('id', id);
-    if(error) throw error;
-
-    if(!viaWa && booking && booking.channel !== 'whatsapp' && booking.email){
-      try {
-        await sendBookingEmail(booking, 'freed');
-      } catch(emailErr){
-        console.error('Email notification failed:', emailErr);
-      }
-    }
-
-    await loadAdminBookings();
-  } catch(e){
-    console.error(e);
-    if(card){ card.style.opacity='1'; card.style.pointerEvents=''; }
-    alert('Could not remove booking. Try again.');
-  }
+  await removeApprovedBooking(id, 'freed', 'Could not remove booking. Try again.');
 }
 
 async function cancelBookingPersonal(id){
   if(!confirm('Cancel this booking and notify the client it was cancelled for personal reasons?')) return;
-  const viaWa = notifyByWhatsApp(adminBookingsById.get(id), 'cancelled');
+  await removeApprovedBooking(id, 'admin_cancelled', 'Could not cancel booking. Try again.');
+}
+
+// Free slot / cancel: send-booking-email deletes the approved booking and then
+// emails the client (email bookings only), so an email never goes out for a
+// booking that is still there. WhatsApp clients get the message right here.
+async function removeApprovedBooking(id, event, failMsg){
+  notifyByWhatsApp(adminBookingsById.get(id), 'cancelled');   // still inside the click
   const card = document.getElementById('card-'+id);
   if(card){ card.style.opacity='0.5'; card.style.pointerEvents='none'; }
-
   try {
-    // Fetch the full row first so we still have the booking data to email
-    // the customer with after it's deleted.
-    const { data: booking, error: fErr } = await sb
-      .from('bookings').select('*').eq('id', id).single();
-    if(fErr) throw fErr;
-
-    const { error } = await sb.from('bookings').delete().eq('id', id);
-    if(error) throw error;
-
-    if(!viaWa && booking && booking.channel !== 'whatsapp' && booking.email){
-      try {
-        await sendBookingEmail(booking, 'admin_cancelled');
-      } catch(emailErr){
-        console.error('Email notification failed:', emailErr);
-      }
-    }
-
+    await adminEmail(id, event);
     await loadAdminBookings();
   } catch(e){
     console.error(e);
     if(card){ card.style.opacity='1'; card.style.pointerEvents=''; }
-    alert('Could not cancel booking. Try again.');
+    alert(failMsg);
   }
 }
 
-// The email itself (copy, language, layout) is built by the send-booking-email
-// edge function from booking.lang; the browser only hands it the booking.
-async function sendBookingEmail(booking, newStatus){
+// Admin → send-booking-email, by booking id and event only. The function checks
+// the admin's login, loads the booking itself and builds the email server-side.
+async function adminEmail(id, event){
+  const { data: { session } } = await sb.auth.getSession();
+  if(!session) throw new Error('Not signed in');
   const res = await fetch(`${SUPABASE_URL}/functions/v1/send-booking-email`, {
     method: "POST",
     headers: {
-      "Authorization": `Bearer ${SUPABASE_ANON}`,
+      "Authorization": `Bearer ${session.access_token}`,
+      "apikey": SUPABASE_ANON,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ booking, newStatus, services: SERVICES, cancelToken: booking.cancel_token }),
+    body: JSON.stringify({ id, event }),
   });
-  if(!res.ok){
-    const txt = await res.text().catch(()=> '');
-    throw new Error('Resend responded '+res.status+': '+txt);
-  }
+  const out = await res.json().catch(()=> ({}));
+  if(!res.ok) throw new Error('send-booking-email '+res.status+': '+(out.error || ''));
+  return out;
 }
 
 function escHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
