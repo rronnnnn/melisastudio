@@ -17,6 +17,29 @@
     document.getElementById('manifestLink').href = '/admin.webmanifest';
     document.getElementById('appTitleMeta').content = 'Melisa Admin';
   }
+  // iOS ignores the swapped manifest, so "Add to Home Screen" from /?admin still
+  // saves start_url "/". In the installed app, a stored admin session goes straight
+  // to the panel (before anything renders); without one, the footer shows an
+  // "Admin" link so she can log in once inside the app. Routing only — the panel
+  // re-checks the session and RLS guards the data. Normal browsers are untouched.
+  (function(){
+    var standalone = navigator.standalone === true ||
+      (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    if(!standalone) return;
+    var q = new URLSearchParams(location.search);
+    if(q.has('admin') || q.has('cancel')) return;
+    var role = null;
+    try {
+      var s = JSON.parse(localStorage.getItem('sb-dnhtvflvjxcdzkqpuhwh-auth-token'));
+      role = s && s.user && s.user.app_metadata && s.user.app_metadata.admin_role;
+    } catch (e) {}
+    if(role === 'main' || role === 'pedicure'){
+      document.documentElement.style.visibility = 'hidden';
+      location.replace('/?admin');
+      return;
+    }
+    document.documentElement.classList.add('standalone-app');
+  })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -307,6 +330,9 @@
 
   footer{text-align:center;margin-top:54px;color:var(--cocoa);font-size:13px;letter-spacing:.06em;}
   footer .fb{color:var(--cocoa-deep);font-weight:700;}
+  /* Admin entry — only in the installed app (head script adds .standalone-app) */
+  .footer-admin{display:none;margin-top:14px;font-size:11px;color:var(--cocoa);opacity:.55;text-decoration:none;letter-spacing:.08em;}
+  html.standalone-app .footer-admin{display:inline-block;}
 
   /* ========== ADMIN PANEL ========== */
   #adminPanel{display:none;position:relative;z-index:2;max-width:780px;margin:0 auto;padding:54px 22px 80px;}
@@ -484,6 +510,7 @@
     <footer>
       <span data-i18n="footer_booked">Booked with love at</span> <span class="fb">Studio Melisa</span>
       <div data-i18n-html="footer_copyright">© 2026 <a href="https://www.highlevel.mk" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline;">High Level</a>. All Rights Reserved.</div>
+      <a class="footer-admin" href="/?admin">Admin</a>
     </footer>
   </div>
 
@@ -853,7 +880,12 @@ const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const STUDIO_EMAIL = "onboarding@resend.dev"; // replace with verified domain in production
 /* ============================================================ */
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+/* Session in localStorage (also inside the installed Home Screen app), refreshed
+   automatically. The storage key is pinned because the <head> script reads it to
+   send the installed app straight to the panel. */
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: { persistSession: true, autoRefreshToken: true, storageKey: 'sb-dnhtvflvjxcdzkqpuhwh-auth-token' },
+});
 
 /* No pinch-zoom (iOS Safari ignores user-scalable=no in the viewport tag). */
 ['gesturestart','gesturechange'].forEach(t=>document.addEventListener(t, e=>e.preventDefault(), { passive:false }));
