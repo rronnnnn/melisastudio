@@ -828,6 +828,12 @@
 /* ============================================================
    CONFIGURATION
    ============================================================ */
+/* WhatsApp booking for clients (tag whatsapp-booking-v1 has the feature fully on).
+   false: no "Book via WhatsApp", email required again, no WhatsApp tab or buttons
+   on email bookings. Existing channel='whatsapp' bookings keep their WhatsApp
+   buttons and messages in the panel so they can still be answered. */
+const WHATSAPP_ENABLED = false;
+
 /* Admin login is Supabase Auth (email + password). The panel role comes from the
    user's app_metadata.admin_role, which only the service role can set:
    'main' = Melisa (full admin), 'pedicure' = pedicure worker (pedicure only). */
@@ -858,6 +864,14 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
    prefilled in her own WhatsApp and she taps Send.
    ============================================================ */
 const MELISA_WHATSAPP = "38972751234";
+
+/* WhatsApp booking off: drop the client button and the admin tab, and the email
+   placeholder loses its "(optional)" (it uses the plain label text instead). */
+if(!WHATSAPP_ENABLED){
+  document.getElementById('waBtn').style.display = 'none';
+  document.querySelector('.admin-filter .filter-btn[data-filter="whatsapp"]').style.display = 'none';
+  document.getElementById('fEmail').setAttribute('data-i18n-placeholder', 'lbl_email');
+}
 
 /* Every WhatsApp message, per language (the language the client booked in).
    {name} {service} {options} {date} {time} {cancelUrl} are filled in;
@@ -1920,7 +1934,8 @@ function validateStep1(){
   if(!name||!sur){ $('err1').textContent=t('err_namesur'); return false; }
   // Email is optional (WhatsApp bookings); when given, the usual checks apply.
   // With returnToReview set the client came back to add one, so it's required then.
-  if($('fEmail').value.trim() || state.returnToReview){
+  // Without WhatsApp booking, email is the only way to book: always required.
+  if(!WHATSAPP_ENABLED || $('fEmail').value.trim() || state.returnToReview){
     if(!checkEmailField(true)){ $('err1').textContent=''; return false; }
   } else { emailHint={type:null}; renderEmailHint(); }
   if(!isValidPhone(currentPhone())){ $('err1').textContent=t('err_phone'); return false; }
@@ -2644,9 +2659,12 @@ function renderAdminBookings(bookings){
   list.innerHTML = bookings.map(b=>{
     const svcLabel = SERVICES[b.service]?.title || b.service;
     const isWa = b.channel === 'whatsapp';
-    const phone = waPhone(b.phone);
+    // WhatsApp booking off: email bookings get no WhatsApp line or button;
+    // existing WhatsApp bookings keep theirs so they can still be answered.
+    const waShown = WHATSAPP_ENABLED || isWa;
+    const phone = waShown ? waPhone(b.phone) : null;
     const waBadge = isWa ? `<span class="booking-badge badge-wa">💬 WhatsApp</span>` : '';
-    const waLine = !phone
+    const waLine = !waShown ? '' : !phone
       ? `<div class="wa-warn">⚠️ No valid phone number${isWa ? ' — this WhatsApp client can\'t be messaged; contact them another way' : ' — WhatsApp unavailable'}.</div>`
       : b.whatsapp_last_sent_at
         ? `<div class="wa-status sent">💬 Last WhatsApp sent ✓ ${escHtml(fmtSentAt(b.whatsapp_last_sent_at))}</div>`
