@@ -31,7 +31,7 @@ function formatDate(d: string, lang: Lang): string {
 type Ctx = { name: string; svc: string; date: string; time: string; cancelUrl: string };
 type Copy = {
   hi: string; service: string; dateL: string; timeL: string; bye: string;
-  approved: { subject: string; intro: string; statusL: string; status: string; deposit: string; outro: string;
+  approved: { subject: string; intro: string; statusL: string; status: string; deposit: string; outro: string; noReply: string;
     cancelTitle: string; cancelBody: string; cancelBtn: string; cancelNote: string };
   rejected: { subject: string; body: (c: Ctx) => string; outro: string };
   admin_cancelled: { subject: string; body: (c: Ctx) => string; apology: string; outro: string; sign: string };
@@ -43,11 +43,12 @@ const COPY: Record<Lang, Copy> = {
   en: {
     hi: "Hi", service: "Service", dateL: "Date", timeL: "Time", bye: "— Studio Melisa",
     approved: {
-      subject: "Your booking has been approved! 🌸",
-      intro: "Great news, your booking at <strong>Studio Melisa</strong> has been approved! 🌸",
+      subject: "Your booking at Studio Melisa is approved",
+      intro: "Great news, your booking at <strong>Studio Melisa</strong> has been approved!",
       statusL: "Status", status: "Approved",
-      deposit: "⚠️ To confirm your booking, the deposit must be paid at Studio Melisa premises at least 3 days before your appointment. If the deposit is not paid within this period, the booking will be cancelled and the appointment slot will be released for other clients.",
-      outro: "If anything changes, just reply to let us know. See you soon! 💕",
+      deposit: "The deposit is paid at the studio at least 3 days before your appointment to keep your booking.",
+      outro: "See you soon!",
+      noReply: "This is an automated message, so replies aren’t read.",
       cancelTitle: "Need to cancel? No problem.",
       cancelBody: "If your plans change, you can cancel your appointment by clicking the link below. Please cancel at least 24 hours in advance.",
       cancelBtn: "Cancel my appointment →",
@@ -78,11 +79,12 @@ const COPY: Record<Lang, Copy> = {
   sq: {
     hi: "Përshëndetje", service: "Shërbimi", dateL: "Data", timeL: "Ora", bye: "— Studio Melisa",
     approved: {
-      subject: "Rezervimi juaj është aprovuar! 🌸",
-      intro: "Lajme të mira rezervimi juaj në <strong>Studio Melisa</strong> është Aprovuar! 🌸",
+      subject: "Rezervimi juaj në Studio Melisa është aprovuar",
+      intro: "Lajme të mira rezervimi juaj në <strong>Studio Melisa</strong> është Aprovuar!",
       statusL: "Statusi", status: "Aprovuar",
-      deposit: "⚠️ Për të konfirmuar rezervimin tuaj, kapari duhet të paguhet në ambientet e Studio Melisa të paktën 3 ditë para terminit. Nëse kapari nuk paguhet brenda këtij afati, rezervimi do të anulohet dhe termini do të lirohet për klientë të tjerë.",
-      outro: "Nëse diçka ndryshon, thjesht përgjigjuni te ky email. Shihemi së shpejti! 💕",
+      deposit: "Kapari paguhet në studio të paktën 3 ditë para terminit, për ta mbajtur rezervimin.",
+      outro: "Shihemi së shpejti!",
+      noReply: "Ky është një mesazh automatik, prandaj përgjigjet nuk lexohen.",
       cancelTitle: "Duhet ta anuloni? Nuk ka problem.",
       cancelBody: "Nëse planet tuaja ndryshojnë, mund ta anuloni terminin duke klikuar lidhjen më poshtë. Ju lutemi anuloni të paktën 24 orë përpara.",
       cancelBtn: "Anuloni terminin tim →",
@@ -113,11 +115,12 @@ const COPY: Record<Lang, Copy> = {
   mk: {
     hi: "Здраво", service: "Услуга", dateL: "Датум", timeL: "Време", bye: "— Studio Melisa",
     approved: {
-      subject: "Вашата резервација е одобрена! 🌸",
-      intro: "Одлична вест, вашата резервација во <strong>Studio Melisa</strong> е одобрена! 🌸",
+      subject: "Вашата резервација во Studio Melisa е одобрена",
+      intro: "Одлична вест, вашата резервација во <strong>Studio Melisa</strong> е одобрена!",
       statusL: "Статус", status: "Одобрена",
-      deposit: "⚠️ За да ја потврдите вашата резервација, капарот мора да се плати во просториите на Studio Melisa најмалку 3 дена пред терминот. Доколку капарот не се плати во овој рок, резервацијата ќе биде откажана и терминот ќе биде ослободен за други клиенти.",
-      outro: "Ако нешто се промени, само одговорете на оваа порака. Се гледаме наскоро! 💕",
+      deposit: "Капарот се плаќа во студиото најмалку 3 дена пред терминот за да ја задржите резервацијата.",
+      outro: "Се гледаме наскоро!",
+      noReply: "Ова е автоматска порака, па одговорите не се читаат.",
       cancelTitle: "Треба да откажете? Нема проблем.",
       cancelBody: "Ако вашите планови се променат, можете да го откажете терминот со клик на линкот подолу. Ве молиме откажете најмалку 24 часа однапред.",
       cancelBtn: "Откажи го мојот термин →",
@@ -174,7 +177,8 @@ function customerEmail(lang: Lang, kind: string, c: Ctx): { subject: string; htm
   <p><strong>${L.service}:</strong> ${c.svc}<br><strong>${L.dateL}:</strong> ${c.date}<br><strong>${L.timeL}:</strong> ${c.time}<br><strong>${A.statusL}:</strong> ${A.status}</p>
   <p style="margin:16px 0;padding:14px 16px;border-radius:10px;background:#FBF3EC;border:1px solid #EADBCE;color:#7A5C45;">${A.deposit}</p>
   <p>${A.outro}</p>
-  <p>${L.bye}</p>${cancelSection}`),
+  <p>${L.bye}</p>${cancelSection}
+  <p style="margin:24px 0 0;font-size:12px;color:#9A7A60;">${A.noReply}</p>`),
     };
   }
 
