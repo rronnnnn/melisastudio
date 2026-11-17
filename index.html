@@ -2367,7 +2367,7 @@ async function saveBooking(b){
 // Network errors / timeouts resolve true so a failed check never blocks a booking.
 async function emailDomainAcceptsMail(email){
   const ctrl = new AbortController();
-  const timer = setTimeout(()=>ctrl.abort(), 6000);
+  const timer = setTimeout(()=>ctrl.abort(), 3000);
   try {
     const res = await fetch(`${SUPABASE_URL}/functions/v1/check-email-domain`, {
       method: "POST",
