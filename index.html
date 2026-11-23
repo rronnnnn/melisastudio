@@ -12,7 +12,7 @@
 <meta name="theme-color" content="#F6EEE6">
 <script>
   // Winter season switch — drives the snow and the winter logo.
-  // On 23 Nov → 6 Jan; ?snow=1 forces it on, ?snow=0 off. Never on admin/cancel pages.
+  // On 23 Nov → 15 Feb; ?snow=1 forces it on, ?snow=0 off. Never on admin/cancel pages.
   window.WINTER = (function(){
     const q = new URLSearchParams(location.search);
     if(q.has('admin') || q.has('cancel')) return false;
@@ -20,7 +20,7 @@
     if(f==='0') return false;
     if(f==='1') return true;
     const d = new Date(), md = (d.getMonth()+1)*100 + d.getDate();
-    return md >= 1123 || md <= 106;
+    return md >= 1123 || md <= 215;
   })();
 </script>
 <script>
