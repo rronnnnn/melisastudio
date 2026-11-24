@@ -29,6 +29,7 @@
   if(new URLSearchParams(location.search).has('admin')){
     document.getElementById('manifestLink').href = '/admin.webmanifest';
     document.getElementById('appTitleMeta').content = 'Melisa Admin';
+    document.documentElement.classList.add('admin-mode'); // admin-only colours (see ADMIN PANEL CSS)
   }
   // iOS ignores the swapped manifest, so "Add to Home Screen" from /?admin still
   // saves start_url "/". In the installed app, a stored admin session goes straight
@@ -437,6 +438,15 @@
   .admin-logout{display:block;text-align:center;margin-top:32px;font-size:13px;color:var(--cocoa);
     cursor:pointer;text-decoration:underline;}
   .loading-spinner{text-align:center;padding:32px;color:var(--cocoa);font-size:14px;}
+
+  /* Admin-only colours: flat lavender-grey page, light grey cards.
+     Status cards keep their amber/green left-edge accent. */
+  html.admin-mode body{background:#CDC9D9;}
+  html.admin-mode .blobs{display:none;}
+  html.admin-mode .glass,
+  html.admin-mode .booking-card,
+  html.admin-mode .booking-card.pending-card,
+  html.admin-mode .booking-card.approved-card{background:#E9E8ED;}
 
   @media(max-width:860px){
     .services{grid-template-columns:repeat(2,1fr);}
