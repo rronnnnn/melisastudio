@@ -12,10 +12,11 @@
 <meta name="theme-color" content="#F6EEE6">
 <script>
   // Winter season switch — drives the snow and the winter logo.
-  // On 23 Nov → 15 Feb; ?snow=1 forces it on, ?snow=0 off. Never on admin/cancel pages.
+  // On 23 Nov → 15 Feb; ?snow=1 forces it on, ?snow=0 off. Never on the cancel page.
+  // Admin gets the winter logo + falling snow, but no snow piles (see SEASONAL SNOW).
   window.WINTER = (function(){
     const q = new URLSearchParams(location.search);
-    if(q.has('admin') || q.has('cancel')) return false;
+    if(q.has('cancel')) return false;
     const f = q.get('snow');
     if(f==='0') return false;
     if(f==='1') return true;
@@ -561,6 +562,7 @@
   <div id="adminPanel">
     <div class="admin-header">
       <img class="admin-logo" src="MstudioLogo.png" alt="Studio Melisa">
+      <script>if(window.WINTER){const l=document.currentScript.previousElementSibling;l.src='MstudioLogoWinter.png';}</script>
       <div class="admin-badge">✦ Admin</div>
     </div>
 
@@ -3247,9 +3249,11 @@ $('hoursFilter').querySelectorAll('.filter-btn').forEach(btn=>{
   if(!window.WINTER) return; // season switch lives in <head>
 
   const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // Admin: falling snow only — piles would sit on hidden cards / cover the admin buttons.
+  const adminPage = new URLSearchParams(location.search).has('admin');
   const services = document.querySelector('#mainSite .services');
   const site = document.getElementById('mainSite');
-  if(!services || !site) return;
+  if(!adminPage && (!services || !site)) return;
 
   // Wavy snow shape: flat-ish bottom, soft lumps on top. Seeded so each cap differs.
   function lumpPath(w, h, seed){
@@ -3276,6 +3280,7 @@ $('hoursFilter').querySelectorAll('.filter-btn').forEach(btn=>{
       <stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#F4F1F2"/></linearGradient></defs>
     <path d="${d}" fill="url(#sg${w}${h})"/></svg>`;
 
+  if(!adminPage){ // ---- snow piles (public site only) ----
   // --- caps on the service cards ---
   const caps = [];
   services.querySelectorAll('.card').forEach((card,i)=>{
@@ -3323,6 +3328,7 @@ $('hoursFilter').querySelectorAll('.filter-btn').forEach(btn=>{
     caps.forEach(([,c])=>c.classList.add('grown'));
     bank.classList.add('grown');
   });
+  } // ---- end snow piles ----
 
   if(reduced) return; // piles show, no falling animation
 
