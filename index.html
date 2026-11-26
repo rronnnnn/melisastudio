@@ -9,7 +9,7 @@
 <link rel="manifest" id="manifestLink" href="/manifest.webmanifest">
 <meta name="apple-mobile-web-app-title" id="appTitleMeta" content="Studio Melisa">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#F6EEE6">
+<meta name="theme-color" content="#CDC9D9">
 <script>
   // Winter season switch — drives the snow and the winter logo.
   // On 23 Nov → 15 Feb; ?snow=1 forces it on, ?snow=0 off. Never on the cancel page.
@@ -440,14 +440,32 @@
     cursor:pointer;text-decoration:underline;}
   .loading-spinner{text-align:center;padding:32px;color:var(--cocoa);font-size:14px;}
 
-  /* Admin-only colours: flat lavender-grey page, light grey cards.
-     Status cards keep their amber/green left-edge accent. */
-  html.admin-mode body{background:#CDC9D9;}
-  html.admin-mode .blobs{display:none;}
-  html.admin-mode .glass,
-  html.admin-mode .booking-card,
-  html.admin-mode .booking-card.pending-card,
-  html.admin-mode .booking-card.approved-card{background:#E9E8ED;}
+  /* Site-wide colours (client page and admin alike): flat lavender-grey page,
+     light grey cards. Status cards keep their amber/green left-edge accent. */
+  body{background:#CDC9D9;}
+  .blobs{display:none;}
+  .glass,
+  .booking-card,
+  .booking-card.pending-card,
+  .booking-card.approved-card{background:#E9E8ED;}
+
+  /* Deposit paid yes/no switch, top-right corner of admin booking cards (under the status badge) */
+  .booking-card-corner{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;}
+  /* Phones: keep name left and badge + switch top-right (overrides the stacked header below) */
+  @media(max-width:680px){ html .booking-card-top{flex-direction:row;} .booking-card-top .booking-name{min-width:0;overflow-wrap:anywhere;} }
+  .deposit-row{display:flex;align-items:center;gap:8px;font-size:13px;
+    font-weight:600;color:var(--cocoa-deep);cursor:pointer;user-select:none;width:fit-content;}
+  .deposit-row input{position:absolute;opacity:0;width:1px;height:1px;}
+  .deposit-track{position:relative;width:42px;height:24px;border-radius:12px;background:#C9C4CF;
+    border:1px solid rgba(90,70,54,.18);transition:background .2s;flex-shrink:0;}
+  .deposit-track::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s;}
+  .deposit-row input:checked + .deposit-track{background:#5C8A5C;}
+  .deposit-row input:checked + .deposit-track::after{transform:translateX(18px);}
+  .deposit-row input:focus-visible + .deposit-track{outline:2px solid var(--cocoa);outline-offset:2px;}
+  .deposit-row input:disabled + .deposit-track{opacity:.5;}
+  .deposit-state{min-width:2.2em;}
+  .deposit-row.paid .deposit-state{color:#3e6b3e;}
 
   @media(max-width:860px){
     .services{grid-template-columns:repeat(2,1fr);}
@@ -2843,7 +2861,15 @@ function renderAdminBookings(bookings){
       <div class="booking-card ${b.status==='pending'?'pending-card':b.status==='approved'?'approved-card':''} glass" id="card-${b.id}">
         <div class="booking-card-top">
           <div class="booking-name">${escHtml(b.name)}</div>
-          <span><span class="booking-badge ${badgeClass}">${badgeText}</span>${waBadge}</span>
+          <div class="booking-card-corner">
+            <span><span class="booking-badge ${badgeClass}">${badgeText}</span>${waBadge}</span>
+            <label class="deposit-row ${b.deposit_paid?'paid':''}">
+              <span>💰 Deposit</span>
+              <input type="checkbox" ${b.deposit_paid?'checked':''} onchange="setDepositPaid('${b.id}', this)">
+              <span class="deposit-track"></span>
+              <span class="deposit-state">${b.deposit_paid?'Yes':'No'}</span>
+            </label>
+          </div>
         </div>
         <div class="booking-meta">
           <span>📅 ${b.date}</span>
@@ -2908,6 +2934,28 @@ async function messageClient(id){
     if(error) throw error;
     await loadAdminBookings();
   } catch(e){ console.error('Could not record WhatsApp sent time:', e); }
+}
+
+// "Deposit paid" switch: saves straight away; flips back if the save fails.
+async function setDepositPaid(id, input){
+  const paid = input.checked;
+  const row = input.closest('.deposit-row');
+  const show = v => { row.classList.toggle('paid', v); row.querySelector('.deposit-state').textContent = v ? 'Yes' : 'No'; };
+  show(paid);
+  input.disabled = true;
+  try {
+    const { error } = await sb.from('bookings').update({ deposit_paid: paid }).eq('id', id);
+    if(error) throw error;
+    const b = adminBookingsById.get(id);
+    if(b) b.deposit_paid = paid;
+  } catch(e){
+    console.error('Could not save deposit status:', e);
+    input.checked = !paid;
+    show(!paid);
+    alert('Could not save the deposit status. Check your connection and try again.');
+  } finally {
+    input.disabled = false;
+  }
 }
 
 async function updateBooking(id, newStatus){
