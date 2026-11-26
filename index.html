@@ -9,7 +9,7 @@
 <link rel="manifest" id="manifestLink" href="/manifest.webmanifest">
 <meta name="apple-mobile-web-app-title" id="appTitleMeta" content="Studio Melisa">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#CDC9D9">
+<meta name="theme-color" content="#F6EEE6">
 <script>
   // Winter season switch — drives the snow and the winter logo.
   // On 23 Nov → 15 Feb; ?snow=1 forces it on, ?snow=0 off. Never on the cancel page.
@@ -440,14 +440,14 @@
     cursor:pointer;text-decoration:underline;}
   .loading-spinner{text-align:center;padding:32px;color:var(--cocoa);font-size:14px;}
 
-  /* Site-wide colours (client page and admin alike): flat lavender-grey page,
-     light grey cards. Status cards keep their amber/green left-edge accent. */
-  body{background:#CDC9D9;}
-  .blobs{display:none;}
-  .glass,
-  .booking-card,
-  .booking-card.pending-card,
-  .booking-card.approved-card{background:#E9E8ED;}
+  /* Admin-only colours: flat lavender-grey page, light grey cards.
+     Status cards keep their amber/green left-edge accent. */
+  html.admin-mode body{background:#CDC9D9;}
+  html.admin-mode .blobs{display:none;}
+  html.admin-mode .glass,
+  html.admin-mode .booking-card,
+  html.admin-mode .booking-card.pending-card,
+  html.admin-mode .booking-card.approved-card{background:#E9E8ED;}
 
   /* Deposit paid yes/no switch, top-right corner of admin booking cards (under the status badge) */
   .booking-card-corner{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;}
